@@ -16,16 +16,17 @@ import javax.inject.Inject
 class AlarmReminderScheduler @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) : ReminderScheduler {
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val alarmManager: AlarmManager? = context.getSystemService(AlarmManager::class.java)
 
     override fun schedule(goals: GoalSettings) {
+        val manager = alarmManager ?: return
         val validDays = goals.daysOfWeek.filter { it in 1..7 }
         validDays.forEach { dayValue ->
             goals.timesOfDay.distinct().forEach { localTime ->
                 val requestCode = requestCodeFor(dayOfWeek = dayValue, localTime = localTime)
                 val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode)
                 runCatching {
-                    alarmManager.setRepeating(
+                    manager.setRepeating(
                         AlarmManager.RTC_WAKEUP,
                         nextTriggerMillis(dayValue = dayValue, localTime = localTime),
                         AlarmManager.INTERVAL_DAY * 7,
@@ -37,13 +38,14 @@ class AlarmReminderScheduler @Inject constructor(
     }
 
     override fun cancel(goals: GoalSettings) {
+        val manager = alarmManager ?: return
         val validDays = goals.daysOfWeek.filter { it in 1..7 }
         validDays.forEach { dayValue ->
             goals.timesOfDay.distinct().forEach { localTime ->
                 val requestCode = requestCodeFor(dayOfWeek = dayValue, localTime = localTime)
                 val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode)
                 runCatching {
-                    alarmManager.cancel(pendingIntent)
+                    manager.cancel(pendingIntent)
                     pendingIntent.cancel()
                 }
             }

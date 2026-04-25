@@ -3,11 +3,12 @@ package com.covildev.pulso.feature_metas.domain.usecase
 import com.covildev.pulso.core.notification.ReminderScheduler
 import com.covildev.pulso.feature_metas.domain.model.GoalSettings
 import com.covildev.pulso.feature_metas.domain.repository.GoalRepository
+import dagger.Lazy
 import javax.inject.Inject
 
 class SaveGoalsUseCase @Inject constructor(
     private val repository: GoalRepository,
-    private val scheduler: ReminderScheduler,
+    private val reminderScheduler: Lazy<ReminderScheduler>,
 ) {
     suspend operator fun invoke(goals: GoalSettings): Result<Unit> {
         val sanitizedGoals = GoalSettings(
@@ -23,6 +24,7 @@ class SaveGoalsUseCase @Inject constructor(
         }
 
         return runCatching {
+            val scheduler = reminderScheduler.get()
             val previousGoals = repository.getGoals()
             previousGoals?.let { scheduler.cancel(it) }
             repository.saveGoals(sanitizedGoals)

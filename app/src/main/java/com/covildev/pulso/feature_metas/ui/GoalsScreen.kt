@@ -3,9 +3,8 @@ package com.covildev.pulso.feature_metas.ui
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -40,7 +39,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalsScreen(
     modifier: Modifier = Modifier,
@@ -84,16 +83,17 @@ fun GoalsScreen(
                             text = "Dias da semana",
                             style = MaterialTheme.typography.titleMedium,
                         )
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            DAY_OPTIONS.forEach { day ->
-                                FilterChip(
-                                    selected = day.value in uiState.selectedDays,
-                                    onClick = { viewModel.toggleDay(day.value) },
-                                    label = { Text(day.label) },
-                                )
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            DAY_OPTIONS.chunked(4).forEach { rowDays ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    rowDays.forEach { day ->
+                                        FilterChip(
+                                            selected = day.value in uiState.selectedDays,
+                                            onClick = { viewModel.toggleDay(day.value) },
+                                            label = { Text(day.label) },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -122,21 +122,22 @@ fun GoalsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         } else {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                uiState.selectedTimes.forEach { time ->
-                                    AssistChip(
-                                        onClick = { viewModel.removeTime(time) },
-                                        label = { Text(timeFormatter.format(time)) },
-                                        trailingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "Remover horario",
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                uiState.selectedTimes.chunked(3).forEach { rowTimes ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        rowTimes.forEach { time ->
+                                            AssistChip(
+                                                onClick = { viewModel.removeTime(time) },
+                                                label = { Text(timeFormatter.format(time)) },
+                                                trailingIcon = {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Close,
+                                                        contentDescription = "Remover horario",
+                                                    )
+                                                },
                                             )
-                                        },
-                                    )
+                                        }
+                                    }
                                 }
                             }
                         }

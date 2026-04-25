@@ -40,10 +40,11 @@ class GoalsViewModel @Inject constructor(
     private val saveGoalsUseCase: SaveGoalsUseCase,
 ) : ViewModel() {
     private val editorState = MutableStateFlow(GoalEditorState())
+    private val recordsFlow = observeAllRecordsUseCase().catch { emit(emptyList()) }
 
     val uiState: StateFlow<GoalsUiState> = combine(
         editorState,
-        observeAllRecordsUseCase(),
+        recordsFlow,
     ) { editor, records ->
         GoalsUiState(
             selectedDays = editor.selectedDays,
