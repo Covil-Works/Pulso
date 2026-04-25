@@ -1,0 +1,128 @@
+package com.covildev.pulso.feature_relatorio.data
+
+import android.content.Context
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import com.covildev.pulso.feature_perfil.domain.model.UserProfile
+import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
+import com.covildev.pulso.feature_relatorio.domain.model.ReportSummary
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.io.FileOutputStream
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import javax.inject.Inject
+
+class PdfReportGenerator @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+) {
+    fun generate(
+        profile: UserProfile?,
+        records: List<BloodPressureRecord>,
+        summary: ReportSummary,
+    ): File {
+        val reportsFolder = File(context.cacheDir, "reports").apply { mkdirs() }
+        val outputFile = File(reportsFolder, "pulso_relatorio_${System.currentTimeMillis()}.pdf")
+
+        val titlePaint = Paint().apply {
+            textSize = 18f
+            isFakeBoldText = true
+        }
+        val sectionPaint = Paint().apply {
+            textSize = 14f
+            isFakeBoldText = true
+        }
+        val bodyPaint = Paint().apply {
+            textSize = 12f
+        }
+
+        val dateTimeFormatter = DateTimeFormatter.ofPattern(
+            "dd/MM/yyyy HH:mm",
+            Locale.forLanguageTag("pt-BR"),
+        )
+
+        val document = PdfDocument()
+        var pageIndex = 1
+        var currentPageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageIndex).create()
+        var currentPage = document.startPage(currentPageInfo)
+        var canvas = currentPage.canvas
+        var y = 40f
+
+        fun nextPage() {
+            document.finishPage(currentPage)
+            pageIndex += 1
+            currentPageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageIndex).create()
+            currentPage = document.startPage(currentPageInfo)
+            canvas = currentPage.canvas
+            y = 40f
+        }
+
+        fun drawLine(text: String, paint: Paint = bodyPaint, space: Float = 20f) {
+            if (y > PAGE_HEIGHT - 40f) {
+                nextPage()
+            }
+            canvas.drawText(text, 40f, y, paint)
+            y += space
+        }
+
+        val nowFormatted = dateTimeFormatter.format(Instant.now().atZone(ZoneId.systemDefault()))
+        val patientName = profile?.name ?: "Nao informado"
+        val patientAge = profile?.age?.toString() ?: "-"
+
+        drawLine("Relatorio de Pressao Arterial", titlePaint, 26f)
+        drawLine("Paciente: $patientName | Idade: $patientAge")
+        drawLine("Gerado em: $nowFormatted")
+        drawLine("")
+
+        drawLine("Resumo Estatistico", sectionPaint, 24f)
+        val highest = summary.highestRecord
+        val lowest = summary.lowestRecord
+        val averageSystolic = summary.averageSystolic?.toString() ?: "-"
+        val averageDiastolic = summary.averageDiastolic?.toString() ?: "-"
+
+        drawLine("Pico maximo: ${formatRecord(highest, dateTimeFormatter)}")
+        drawLine("Pico minimo: ${formatRecord(lowest, dateTimeFormatter)}")
+        drawLine("Pressao media: $averageSystolic/$averageDiastolic mmHg")
+        drawLine("")
+
+        drawLine("Historico detalhado", sectionPaint, 24f)
+        if (records.isEmpty()) {
+            drawLine("Nenhum registro encontrado no periodo.")
+        } else {
+            records.forEach { record ->
+                val date = dateTimeFormatter.format(
+                    Instant.ofEpochMilli(record.timestamp).atZone(ZoneId.systemDefault()),
+                )
+                drawLine(
+                    "$date | ${record.systolic}/${record.diastolic} mmHg | ${record.riskLevel.label}",
+                )
+                record.notes?.takeIf { it.isNotBlank() }?.let { note ->
+                    drawLine("Obs: ${note.take(MAX_NOTE_LENGTH)}")
+                }
+            }
+        }
+
+        document.finishPage(currentPage)
+        FileOutputStream(outputFile).use { out ->
+            document.writeTo(out)
+        }
+        document.close()
+
+        return outputFile
+    }
+}
+
+private fun formatRecord(
+    record: BloodPressureRecord?,
+    formatter: DateTimeFormatter,
+): String {
+    if (record == null) return "-"
+    val date = formatter.format(Instant.ofEpochMilli(record.timestamp).atZone(ZoneId.systemDefault()))
+    return "${record.systolic}/${record.diastolic} mmHg em $date"
+}
+
+private const val PAGE_WIDTH = 595
+private const val PAGE_HEIGHT = 842
+private const val MAX_NOTE_LENGTH = 80
