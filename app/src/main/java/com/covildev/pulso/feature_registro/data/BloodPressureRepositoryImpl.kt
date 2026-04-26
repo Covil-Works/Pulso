@@ -28,6 +28,10 @@ class BloodPressureRepositoryImpl @Inject constructor(
     override suspend fun insertRecord(record: BloodPressureRecord) {
         dao.insert(record.toEntity())
     }
+
+    override suspend fun updateRecord(record: BloodPressureRecord) {
+        dao.insert(record.toEntity())
+    }
 }
 
 private fun BloodPressureEntity.toDomain(): BloodPressureRecord {

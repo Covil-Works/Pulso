@@ -1,28 +1,45 @@
 package com.covildev.pulso.feature_registro.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -30,8 +47,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +57,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,10 +68,16 @@ import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.domain.model.RiskLevel
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+private const val MAX_RECENT_RECORDS = 30
+
+private sealed interface DashboardBottomSheetMode {
+    data object NewRecord : DashboardBottomSheetMode
+    data class EditRecord(val record: BloodPressureRecord) : DashboardBottomSheetMode
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,18 +90,33 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showOptionsMenu by remember { mutableStateOf(false) }
-    var showBottomSheet by rememberSaveable { mutableStateOf(false) }
+    var expandedRecordId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var bottomSheetMode by remember { mutableStateOf<DashboardBottomSheetMode?>(null) }
 
     var systolicInput by rememberSaveable { mutableStateOf("") }
     var diastolicInput by rememberSaveable { mutableStateOf("") }
     var includeNotes by rememberSaveable { mutableStateOf(false) }
     var notesInput by rememberSaveable { mutableStateOf("") }
+    val latestRecords = remember(uiState.records) { uiState.records.take(MAX_RECENT_RECORDS) }
 
-    fun resetBottomSheet() {
+    fun resetBottomSheetInputs() {
         systolicInput = ""
         diastolicInput = ""
         includeNotes = false
         notesInput = ""
+    }
+
+    fun openNewRecordSheet() {
+        resetBottomSheetInputs()
+        bottomSheetMode = DashboardBottomSheetMode.NewRecord
+    }
+
+    fun openEditRecordSheet(record: BloodPressureRecord) {
+        systolicInput = record.systolic.toString()
+        diastolicInput = record.diastolic.toString()
+        notesInput = record.notes.orEmpty()
+        includeNotes = record.notes != null
+        bottomSheetMode = DashboardBottomSheetMode.EditRecord(record)
     }
 
     Scaffold(
@@ -105,7 +144,7 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showBottomSheet = true }) {
+            FloatingActionButton(onClick = { openNewRecordSheet() }) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar registro")
             }
         },
@@ -121,45 +160,56 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                MonthCalendar(
-                    month = uiState.selectedMonth,
-                    highlightedDays = uiState.highlightedDays,
-                    onPreviousMonth = viewModel::goToPreviousMonth,
-                    onNextMonth = viewModel::goToNextMonth,
-                    canGoNextMonth = uiState.selectedMonth < YearMonth.now(),
+                AveragePressureHeadline(
+                    averageSystolic = uiState.averageSystolic,
+                    averageDiastolic = uiState.averageDiastolic,
                 )
             }
             item {
-                MetricsCard(uiState = uiState)
+                CurrentStreakSection(streakDays = uiState.streakDays)
             }
             item {
                 Text(
-                    text = "Historico do mes",
+                    text = "\u00DAltimos registros",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
             }
-            if (uiState.monthlyRecords.isEmpty()) {
+            if (latestRecords.isEmpty()) {
                 item {
                     Text(
-                        text = "Nenhum registro neste mes ainda.",
+                        text = "Nenhum registro ainda.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
                 items(
-                    items = uiState.monthlyRecords,
+                    items = latestRecords,
                     key = { it.id },
                 ) { record ->
-                    RecordCard(record = record)
+                    RecentRecordCard(
+                        record = record,
+                        isExpanded = expandedRecordId == record.id,
+                        activeContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        onCardClick = {
+                            expandedRecordId = if (expandedRecordId == record.id) null else record.id
+                        },
+                        onEditClick = { openEditRecordSheet(record) },
+                    )
                 }
             }
         }
     }
 
-    if (showBottomSheet) {
+    val sheetMode = bottomSheetMode
+    if (sheetMode != null) {
         ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
+            onDismissRequest = {
+                if (sheetMode is DashboardBottomSheetMode.EditRecord) {
+                    expandedRecordId = null
+                }
+                bottomSheetMode = null
+            },
         ) {
             Column(
                 modifier = Modifier
@@ -168,7 +218,11 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Novo registro",
+                    text = if (sheetMode is DashboardBottomSheetMode.EditRecord) {
+                        "Editar registro"
+                    } else {
+                        "Novo registro"
+                    },
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -189,16 +243,18 @@ fun DashboardScreen(
                         singleLine = true,
                     )
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = includeNotes,
-                        onCheckedChange = { includeNotes = it },
-                    )
-                    Text("Adicionar observacao")
+                if (sheetMode is DashboardBottomSheetMode.NewRecord) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = includeNotes,
+                            onCheckedChange = { includeNotes = it },
+                        )
+                        Text("Adicionar observacao")
+                    }
                 }
-                if (includeNotes) {
+                if (sheetMode is DashboardBottomSheetMode.EditRecord || includeNotes) {
                     OutlinedTextField(
                         modifier = Modifier.fillMaxWidth(),
                         value = notesInput,
@@ -210,16 +266,33 @@ fun DashboardScreen(
                     modifier = Modifier.align(Alignment.End),
                     onClick = {
                         coroutineScope.launch {
-                            val saveResult = viewModel.addRecord(
-                                systolicInput = systolicInput,
-                                diastolicInput = diastolicInput,
-                                notes = notesInput.takeIf { includeNotes },
-                            )
+                            val saveResult = when (sheetMode) {
+                                is DashboardBottomSheetMode.NewRecord -> {
+                                    viewModel.addRecord(
+                                        systolicInput = systolicInput,
+                                        diastolicInput = diastolicInput,
+                                        notes = notesInput.takeIf { includeNotes },
+                                    )
+                                }
+                                is DashboardBottomSheetMode.EditRecord -> {
+                                    viewModel.updateRecord(
+                                        record = sheetMode.record,
+                                        systolicInput = systolicInput,
+                                        diastolicInput = diastolicInput,
+                                        notes = notesInput,
+                                    )
+                                }
+                            }
                             if (saveResult.isSuccess) {
-                                showBottomSheet = false
-                                resetBottomSheet()
+                                bottomSheetMode = null
+                                resetBottomSheetInputs()
                                 val riskLabel = saveResult.getOrNull()?.label ?: ""
-                                snackbarHostState.showSnackbar("Registro salvo ($riskLabel).")
+                                if (sheetMode is DashboardBottomSheetMode.EditRecord) {
+                                    expandedRecordId = null
+                                    snackbarHostState.showSnackbar("Registro atualizado ($riskLabel).")
+                                } else {
+                                    snackbarHostState.showSnackbar("Registro salvo ($riskLabel).")
+                                }
                             } else {
                                 snackbarHostState.showSnackbar(
                                     saveResult.exceptionOrNull()?.message
@@ -237,55 +310,121 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun MetricsCard(uiState: DashboardUiState) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+private fun AveragePressureHeadline(
+    averageSystolic: Int?,
+    averageDiastolic: Int?,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        Text(
+            text = "Pressao media",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "Metricas resumidas",
+                text = averageSystolic?.toString() ?: "--",
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "/",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = averageDiastolic?.toString() ?: "--",
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Text(
+            text = "mmHg",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CurrentStreakSection(streakDays: Int) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Sequencia atual",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = streakDays.toString(),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "dia(s) seguido(s)",
                 style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = "Pressao media: ${uiState.averageSystolic ?: "-"} / ${uiState.averageDiastolic ?: "-"} mmHg",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text = "Sequencia atual: ${uiState.streakDays} dia(s) seguido(s).",
-                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
 @Composable
-private fun RecordCard(record: BloodPressureRecord) {
+private fun RecentRecordCard(
+    record: BloodPressureRecord,
+    isExpanded: Boolean,
+    activeContainerColor: Color,
+    onCardClick: () -> Unit,
+    onEditClick: () -> Unit,
+) {
     val riskColor = when (record.riskLevel) {
         RiskLevel.GOOD -> Color(0xFF2E7D32)
         RiskLevel.WARNING -> Color(0xFFF9A825)
         RiskLevel.RISK -> Color(0xFFC62828)
     }
+    val containerColor by animateColorAsState(
+        targetValue = if (isExpanded) activeContainerColor else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "recordCardContainerColor",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "recordCardBorderColor",
+    )
+    val borderWidth: Dp = if (isExpanded) 1.5.dp else 1.dp
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-BR")) }
     val dateText = dateFormatter.format(
         Instant.ofEpochMilli(record.timestamp).atZone(ZoneId.systemDefault()),
     )
 
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = riskColor.copy(alpha = 0.12f),
-        ),
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
+        onClick = onCardClick,
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.outlinedCardColors(containerColor = containerColor),
+        border = BorderStroke(width = borderWidth, color = borderColor),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
@@ -295,6 +434,7 @@ private fun RecordCard(record: BloodPressureRecord) {
             Text(
                 text = "Classificacao: ${record.riskLevel.label}",
                 color = riskColor,
+                style = MaterialTheme.typography.bodyMedium,
             )
             record.notes?.let { note ->
                 Text(
@@ -302,6 +442,26 @@ private fun RecordCard(record: BloodPressureRecord) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.End,
+                ) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    TextButton(onClick = onEditClick) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar",
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Editar")
+                    }
+                }
             }
         }
     }

@@ -160,14 +160,15 @@ private fun MainAppScaffold(
             }
         },
     ) { innerPadding ->
+        val contentModifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
         when (currentTab) {
             MainTab.DASHBOARD -> DashboardScreen(
-                modifier = Modifier.padding(innerPadding),
+                modifier = contentModifier,
                 onProfileRequested = { showProfileDialog = true },
             )
 
-            MainTab.GOALS -> GoalsScreen(modifier = Modifier.padding(innerPadding))
-            MainTab.REPORTS -> ReportsScreen(modifier = Modifier.padding(innerPadding))
+            MainTab.GOALS -> GoalsScreen(modifier = contentModifier)
+            MainTab.REPORTS -> ReportsScreen(modifier = contentModifier)
         }
     }
 

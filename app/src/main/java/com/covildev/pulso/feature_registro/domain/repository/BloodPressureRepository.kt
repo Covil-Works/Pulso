@@ -8,4 +8,5 @@ interface BloodPressureRepository {
     fun observeRecordsInPeriod(startInclusive: Long, endInclusive: Long): Flow<List<BloodPressureRecord>>
     suspend fun getAllRecords(): List<BloodPressureRecord>
     suspend fun insertRecord(record: BloodPressureRecord)
+    suspend fun updateRecord(record: BloodPressureRecord)
 }
