@@ -1,6 +1,8 @@
 package com.covildev.pulso.feature_relatorio.ui
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -29,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,7 +59,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -76,7 +79,6 @@ fun ReportsScreen(
     viewModel: ReportsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var expandedRecordId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -84,7 +86,11 @@ fun ReportsScreen(
     var systolicInput by rememberSaveable { mutableStateOf("") }
     var diastolicInput by rememberSaveable { mutableStateOf("") }
     var notesInput by rememberSaveable { mutableStateOf("") }
-    var lastSharedReportName by rememberSaveable { mutableStateOf<String?>(null) }
+    val shareReportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) {
+        viewModel.clearGeneratedReport()
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         val error = uiState.errorMessage ?: return@LaunchedEffect
@@ -94,17 +100,18 @@ fun ReportsScreen(
 
     LaunchedEffect(uiState.generatedReport?.fileName) {
         val report = uiState.generatedReport ?: return@LaunchedEffect
-        if (lastSharedReportName == report.fileName) return@LaunchedEffect
-        lastSharedReportName = report.fileName
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
             putExtra(Intent.EXTRA_STREAM, report.uri)
             putExtra(Intent.EXTRA_SUBJECT, "Relatório de Pressão")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(
-            Intent.createChooser(shareIntent, "Compartilhar ou salvar PDF"),
-        )
+        runCatching {
+            shareReportLauncher.launch(Intent.createChooser(shareIntent, "Compartilhar ou salvar PDF"))
+        }.onFailure {
+            viewModel.clearGeneratedReport()
+            snackbarHostState.showSnackbar("Não foi possível abrir o compartilhamento.")
+        }
     }
 
     fun openEditRecordSheet(record: BloodPressureRecord) {
@@ -131,12 +138,10 @@ fun ReportsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                Button(
-                    onClick = viewModel::generateReport,
-                    enabled = !uiState.isGenerating,
-                ) {
-                    Text("Gerar relatório em PDF")
-                }
+                ReportGenerationSection(
+                    isGenerating = uiState.isGenerating,
+                    onGenerateReport = viewModel::generateReport,
+                )
             }
             if (uiState.isGenerating) {
                 item {
@@ -265,6 +270,52 @@ fun ReportsScreen(
     }
 }
 
+@Composable
+private fun ReportGenerationSection(
+    isGenerating: Boolean,
+    onGenerateReport: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Relatório completo",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                onClick = onGenerateReport,
+                enabled = !isGenerating,
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                ),
+            ) {
+                Text("Gerar relatório em PDF")
+            }
+        }
+    }
+}
 @Composable
 private fun ReportRecordCard(
     record: BloodPressureRecord,

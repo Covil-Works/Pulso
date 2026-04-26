@@ -65,6 +65,7 @@ class ReportsViewModel @Inject constructor(
             reportGenerationState.update {
                 it.copy(
                     isGenerating = true,
+                    generatedReport = null,
                     errorMessage = null,
                 )
             }
@@ -111,5 +112,9 @@ class ReportsViewModel @Inject constructor(
 
     fun clearError() {
         reportGenerationState.update { it.copy(errorMessage = null) }
+    }
+
+    fun clearGeneratedReport() {
+        reportGenerationState.update { it.copy(generatedReport = null) }
     }
 }
