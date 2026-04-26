@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.AddAlarm
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -29,7 +30,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -239,7 +239,7 @@ fun GoalsScreen(
                 }
 
                 TextButton(
-                    colors = TextButtonDefaults.textButtonColors(
+                    colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.secondary,
                     ),
                     onClick = {
@@ -260,7 +260,7 @@ fun GoalsScreen(
                 }
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
-                    colors = TextButtonDefaults.textButtonColors(
+                    colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.secondary,
                     ),
                     onClick = {
@@ -297,7 +297,7 @@ fun GoalsScreen(
             confirmButton = {
                 TextButton(
                     onClick = { selectedDayForRecords = -1 },
-                    colors = TextButtonDefaults.textButtonColors(
+                    colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.secondary,
                     ),
                 ) {

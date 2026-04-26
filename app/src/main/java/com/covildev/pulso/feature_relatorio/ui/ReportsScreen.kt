@@ -47,7 +47,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -253,7 +252,7 @@ fun ReportsScreen(
                 )
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
-                    colors = TextButtonDefaults.textButtonColors(
+                    colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.secondary,
                     ),
                     onClick = {
@@ -406,7 +405,7 @@ private fun ReportRecordCard(
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         TextButton(
                             onClick = onEditClick,
-                            colors = TextButtonDefaults.textButtonColors(
+                            colors = ButtonDefaults.textButtonColors(
                                 contentColor = MaterialTheme.colorScheme.secondary,
                             ),
                         ) {
@@ -419,7 +418,7 @@ private fun ReportRecordCard(
                         }
                         TextButton(
                             onClick = onDeleteClick,
-                            colors = TextButtonDefaults.textButtonColors(
+                            colors = ButtonDefaults.textButtonColors(
                                 contentColor = MaterialTheme.colorScheme.secondary,
                             ),
                         ) {
