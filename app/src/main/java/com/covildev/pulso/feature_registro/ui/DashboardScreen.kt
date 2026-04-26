@@ -331,6 +331,11 @@ private fun AveragePressureHeadline(
     averageSystolic: Int?,
     averageDiastolic: Int?,
 ) {
+    val averageValueTextStyle = MaterialTheme.typography.displayMedium.copy(
+        fontSize = MaterialTheme.typography.displayMedium.fontSize * 1.5f,
+        lineHeight = MaterialTheme.typography.displayMedium.lineHeight * 1.5f,
+    )
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -347,7 +352,7 @@ private fun AveragePressureHeadline(
         ) {
             Text(
                 text = averageSystolic?.toString() ?: "--",
-                style = MaterialTheme.typography.displayMedium,
+                style = averageValueTextStyle,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.alignByBaseline(),
             )
@@ -359,7 +364,7 @@ private fun AveragePressureHeadline(
             )
             Text(
                 text = averageDiastolic?.toString() ?: "--",
-                style = MaterialTheme.typography.displayMedium,
+                style = averageValueTextStyle,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.alignByBaseline(),
             )
@@ -377,18 +382,18 @@ private fun AveragePressureHeadline(
 private fun CurrentStreakSection(streakDays: Int) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "Sequência atual",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         Row(
-            verticalAlignment = Alignment.Bottom,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Text(
+                text = "Sequência atual",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(
                 text = streakDays.toString(),
                 style = MaterialTheme.typography.headlineLarge,
