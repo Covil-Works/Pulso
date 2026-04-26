@@ -107,7 +107,7 @@ private fun OnboardingScreen(
             Text("Bem-vindo ao Pulso")
             Text(
                 modifier = Modifier.padding(bottom = 16.dp),
-                text = "Antes de comecar, informe seus dados de perfil.",
+                text = "Antes de começar, informe seus dados de perfil.",
             )
             ProfileForm(
                 name = name,
@@ -121,7 +121,7 @@ private fun OnboardingScreen(
                         if (saveResult.isFailure) {
                             snackbarHostState.showSnackbar(
                                 saveResult.exceptionOrNull()?.message
-                                    ?: "Nao foi possivel salvar seu perfil.",
+                                    ?: "Não foi possível salvar seu perfil.",
                             )
                         }
                     }
@@ -266,5 +266,5 @@ private enum class MainTab(
 ) {
     DASHBOARD("Principal", Icons.Default.Home),
     GOALS("Metas", Icons.Default.NotificationsActive),
-    REPORTS("Relatorios", Icons.AutoMirrored.Filled.Assignment),
+    REPORTS("Relatórios", Icons.AutoMirrored.Filled.Assignment),
 }

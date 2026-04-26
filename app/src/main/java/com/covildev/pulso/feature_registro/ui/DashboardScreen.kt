@@ -170,7 +170,7 @@ fun DashboardScreen(
             }
             item {
                 Text(
-                    text = "Ultimos",
+                    text = "Últimos",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
@@ -230,7 +230,7 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f),
                         value = systolicInput,
                         onValueChange = { systolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Sistolica") },
+                        label = { Text("Sistólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -238,7 +238,7 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f),
                         value = diastolicInput,
                         onValueChange = { diastolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Diastolica") },
+                        label = { Text("Diastólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -251,7 +251,7 @@ fun DashboardScreen(
                             checked = includeNotes,
                             onCheckedChange = { includeNotes = it },
                         )
-                        Text("Adicionar observacao")
+                        Text("Adicionar observação")
                     }
                 }
                 if (sheetMode is DashboardBottomSheetMode.EditRecord || includeNotes) {
@@ -259,7 +259,7 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         value = notesInput,
                         onValueChange = { notesInput = it },
-                        label = { Text("Observacao") },
+                        label = { Text("Observação") },
                     )
                 }
                 TextButton(
@@ -296,7 +296,7 @@ fun DashboardScreen(
                             } else {
                                 snackbarHostState.showSnackbar(
                                     saveResult.exceptionOrNull()?.message
-                                        ?: "Nao foi possivel salvar o registro.",
+                                        ?: "Não foi possível salvar o registro.",
                                 )
                             }
                         }
@@ -320,7 +320,7 @@ private fun AveragePressureHeadline(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "Pressao media",
+            text = "Pressão média",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -364,7 +364,7 @@ private fun CurrentStreakSection(streakDays: Int) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Sequencia atual",
+            text = "Sequência atual",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -435,7 +435,7 @@ private fun RecentRecordCard(
                 style = MaterialTheme.typography.titleSmall,
             )
             Text(
-                text = "Classificacao: ${record.riskLevel.label}",
+                text = "Classificação: ${record.riskLevel.label}",
                 color = riskColor,
                 style = MaterialTheme.typography.bodyMedium,
             )

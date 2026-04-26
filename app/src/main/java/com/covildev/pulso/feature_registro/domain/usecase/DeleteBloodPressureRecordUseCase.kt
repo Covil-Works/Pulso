@@ -10,7 +10,7 @@ class DeleteBloodPressureRecordUseCase @Inject constructor(
     suspend operator fun invoke(record: BloodPressureRecord): Result<Unit> {
         if (record.id <= 0L) {
             return Result.failure(
-                IllegalArgumentException("Registro invalido para exclusao."),
+                IllegalArgumentException("Registro inválido para exclusão."),
             )
         }
         repository.deleteRecord(record.id)

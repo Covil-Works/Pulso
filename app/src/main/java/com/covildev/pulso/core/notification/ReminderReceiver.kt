@@ -49,12 +49,12 @@ class ReminderReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Hora de medir sua pressao")
+            .setContentTitle("Hora de medir sua pressão")
             .setContentText(
                 if (formattedTime.isNotEmpty()) {
                     "Lembrete configurado para $formattedTime."
                 } else {
-                    "Nao se esqueca de registrar sua medicao."
+                    "Não se esqueça de registrar sua medição."
                 },
             )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

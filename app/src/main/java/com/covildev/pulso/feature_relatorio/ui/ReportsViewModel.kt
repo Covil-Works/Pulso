@@ -93,9 +93,9 @@ class ReportsViewModel @Inject constructor(
         notes: String?,
     ): Result<RiskLevel> {
         val systolic = systolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressao sistolica."))
+            ?: return Result.failure(IllegalArgumentException("Informe a pressão sistólica."))
         val diastolic = diastolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressao diastolica."))
+            ?: return Result.failure(IllegalArgumentException("Informe a pressão diastólica."))
 
         return updateBloodPressureRecordUseCase(
             record = record,

@@ -99,7 +99,7 @@ fun ReportsScreen(
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
             putExtra(Intent.EXTRA_STREAM, report.uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Relatorio de Pressao")
+            putExtra(Intent.EXTRA_SUBJECT, "Relatório de Pressão")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
@@ -117,7 +117,7 @@ fun ReportsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(title = { Text("Relatorios") })
+            TopAppBar(title = { Text("Relatórios") })
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
@@ -135,7 +135,7 @@ fun ReportsScreen(
                     onClick = viewModel::generateReport,
                     enabled = !uiState.isGenerating,
                 ) {
-                    Text("Gerar relatorio em PDF")
+                    Text("Gerar relatório em PDF")
                 }
             }
             if (uiState.isGenerating) {
@@ -145,7 +145,7 @@ fun ReportsScreen(
             }
             item {
                 Text(
-                    text = "Historico completo",
+                    text = "Histórico completo",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
@@ -177,11 +177,11 @@ fun ReportsScreen(
                                     if (expandedRecordId == record.id) {
                                         expandedRecordId = null
                                     }
-                                    snackbarHostState.showSnackbar("Registro excluido.")
+                                    snackbarHostState.showSnackbar("Registro excluído.")
                                 } else {
                                     snackbarHostState.showSnackbar(
                                         result.exceptionOrNull()?.message
-                                            ?: "Nao foi possivel excluir o registro.",
+                                            ?: "Não foi possível excluir o registro.",
                                     )
                                 }
                             }
@@ -214,7 +214,7 @@ fun ReportsScreen(
                         modifier = Modifier.weight(1f),
                         value = systolicInput,
                         onValueChange = { systolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Sistolica") },
+                        label = { Text("Sistólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -222,7 +222,7 @@ fun ReportsScreen(
                         modifier = Modifier.weight(1f),
                         value = diastolicInput,
                         onValueChange = { diastolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Diastolica") },
+                        label = { Text("Diastólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -231,7 +231,7 @@ fun ReportsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     value = notesInput,
                     onValueChange = { notesInput = it },
-                    label = { Text("Observacao") },
+                    label = { Text("Observação") },
                 )
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
@@ -252,7 +252,7 @@ fun ReportsScreen(
                             } else {
                                 snackbarHostState.showSnackbar(
                                     saveResult.exceptionOrNull()?.message
-                                        ?: "Nao foi possivel salvar o registro.",
+                                        ?: "Não foi possível salvar o registro.",
                                 )
                             }
                         }
@@ -315,7 +315,7 @@ private fun ReportRecordCard(
                 style = MaterialTheme.typography.titleSmall,
             )
             Text(
-                text = "Classificacao: ${record.riskLevel.label}",
+                text = "Classificação: ${record.riskLevel.label}",
                 color = riskColor,
                 style = MaterialTheme.typography.bodyMedium,
             )

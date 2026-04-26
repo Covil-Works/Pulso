@@ -31,7 +31,7 @@ data class GoalsUiState(
     val previewSelectedTimes: List<LocalTime> = emptyList(),
     val editorSelectedDays: Set<Int> = emptySet(),
     val editorSelectedTimes: List<LocalTime> = emptyList(),
-    val progressMessage: String = "Defina os dias e horarios para montar sua rotina.",
+    val progressMessage: String = "Defina os dias e horários para montar sua rotina.",
 )
 
 private data class GoalEditorState(
@@ -173,7 +173,7 @@ private fun buildProgressMessage(
     records: List<BloodPressureRecord>,
 ): String {
     if (selectedDays.isEmpty()) {
-        return "Selecione dias da semana e horarios para ativar metas de lembrete."
+        return "Selecione dias da semana e horários para ativar metas de lembrete."
     }
 
     val recordDates = records.map {
@@ -194,11 +194,11 @@ private fun buildProgressMessage(
     }
 
     if (expectedDays == 0) {
-        return "Nenhuma medicao esperada nos ultimos 7 dias com as regras atuais."
+        return "Nenhuma medição esperada nos últimos 7 dias com as regras atuais."
     }
     if (completedDays == expectedDays) {
-        return "Excelente! Voce cumpriu $completedDays de $expectedDays dias previstos."
+        return "Excelente! Você cumpriu $completedDays de $expectedDays dias previstos."
     }
     val missedDays = expectedDays - completedDays
-    return "Voce registrou em $completedDays de $expectedDays dias previstos. Faltaram $missedDays dia(s)."
+    return "Você registrou em $completedDays de $expectedDays dias previstos. Faltaram $missedDays dia(s)."
 }

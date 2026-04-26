@@ -16,13 +16,13 @@ class UpdateBloodPressureRecordUseCase @Inject constructor(
     ): Result<RiskLevel> {
         if (systolic !in 1..299 || diastolic !in 1..299) {
             return Result.failure(
-                IllegalArgumentException("A pressao deve ser um numero inteiro entre 1 e 299."),
+                IllegalArgumentException("A pressão deve ser um número inteiro entre 1 e 299."),
             )
         }
 
         if (systolic <= diastolic) {
             return Result.failure(
-                IllegalArgumentException("A sistolica deve ser maior do que a diastolica."),
+                IllegalArgumentException("A sistólica deve ser maior do que a diastólica."),
             )
         }
 

@@ -6,8 +6,8 @@ import android.content.Context
 import android.os.Build
 
 const val REMINDER_CHANNEL_ID = "pressure_reminders"
-private const val REMINDER_CHANNEL_NAME = "Lembretes de medicao"
-private const val REMINDER_CHANNEL_DESCRIPTION = "Notificacoes para registrar a pressao arterial"
+private const val REMINDER_CHANNEL_NAME = "Lembretes de medição"
+private const val REMINDER_CHANNEL_DESCRIPTION = "Notificações para registrar a pressão arterial"
 
 fun createReminderNotificationChannel(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return

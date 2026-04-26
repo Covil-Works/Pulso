@@ -60,7 +60,7 @@ fun MonthCalendar(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             IconButton(onClick = onPreviousMonth) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Mes anterior")
+                Icon(Icons.Default.ChevronLeft, contentDescription = "Mês anterior")
             }
             Text(
                 text = month.format(formatter).replaceFirstChar { it.uppercase() },
@@ -71,7 +71,7 @@ fun MonthCalendar(
                 onClick = onNextMonth,
                 enabled = canGoNextMonth,
             ) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Proximo mes")
+                Icon(Icons.Default.ChevronRight, contentDescription = "Próximo mês")
             }
         }
 

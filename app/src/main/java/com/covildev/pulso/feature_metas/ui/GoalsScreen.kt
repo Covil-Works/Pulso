@@ -112,7 +112,7 @@ fun GoalsScreen(
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         Text(
-                            text = "Horarios: ${formatSelectedTimes(uiState.previewSelectedTimes, timeFormatter)}",
+                            text = "Horários: ${formatSelectedTimes(uiState.previewSelectedTimes, timeFormatter)}",
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
@@ -120,7 +120,7 @@ fun GoalsScreen(
             }
             item {
                 Text(
-                    text = "Registro do mes",
+                    text = "Registro do mês",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
@@ -201,12 +201,12 @@ fun GoalsScreen(
                 }
 
                 Text(
-                    text = "Horarios",
+                    text = "Horários",
                     style = MaterialTheme.typography.titleSmall,
                 )
                 if (uiState.editorSelectedTimes.isEmpty()) {
                     Text(
-                        text = "Nenhum horario definido.",
+                        text = "Nenhum horário definido.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -220,7 +220,7 @@ fun GoalsScreen(
                                         trailingIcon = {
                                             Icon(
                                                 imageVector = Icons.Default.Close,
-                                                contentDescription = "Remover horario",
+                                                contentDescription = "Remover horário",
                                             )
                                         },
                                     )
@@ -245,7 +245,7 @@ fun GoalsScreen(
                     },
                 ) {
                     Icon(Icons.Default.AddAlarm, contentDescription = null)
-                    Text(" Adicionar horario")
+                    Text(" Adicionar horário")
                 }
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
@@ -260,7 +260,7 @@ fun GoalsScreen(
                             } else {
                                 snackbarHostState.showSnackbar(
                                     result.exceptionOrNull()?.message
-                                        ?: "Nao foi possivel salvar as metas.",
+                                        ?: "Não foi possível salvar as metas.",
                                 )
                             }
                         }
@@ -302,7 +302,7 @@ private fun DayRecordsContent(records: List<BloodPressureRecord>) {
     ) {
         if (records.isEmpty()) {
             Text(
-                text = "Nao ha registros neste dia.",
+                text = "Não há registros neste dia.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return@Column
@@ -324,13 +324,13 @@ private fun DayRecordsContent(records: List<BloodPressureRecord>) {
                         style = MaterialTheme.typography.titleSmall,
                     )
                     Text(
-                        text = "Horario: $hour",
+                        text = "Horário: $hour",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     record.notes?.takeIf { it.isNotBlank() }?.let { note ->
                         Text(
-                            text = "Observacao: $note",
+                            text = "Observação: $note",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -349,11 +349,11 @@ private data class DayOption(
 
 private val DAY_OPTIONS = listOf(
     DayOption(1, "Seg", "Segunda"),
-    DayOption(2, "Ter", "Terca"),
+    DayOption(2, "Ter", "Terça"),
     DayOption(3, "Qua", "Quarta"),
     DayOption(4, "Qui", "Quinta"),
     DayOption(5, "Sex", "Sexta"),
-    DayOption(6, "Sab", "Sabado"),
+    DayOption(6, "Sab", "Sábado"),
     DayOption(7, "Dom", "Domingo"),
 )
 
@@ -378,6 +378,6 @@ private fun formatSelectedTimes(
     times: List<LocalTime>,
     formatter: DateTimeFormatter,
 ): String {
-    if (times.isEmpty()) return "Nenhum horario definido"
+    if (times.isEmpty()) return "Nenhum horário definido"
     return times.joinToString(", ") { formatter.format(it) }
 }

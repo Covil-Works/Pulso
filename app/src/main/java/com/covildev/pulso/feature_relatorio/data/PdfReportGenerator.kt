@@ -68,28 +68,28 @@ class PdfReportGenerator @Inject constructor(
         }
 
         val nowFormatted = dateTimeFormatter.format(Instant.now().atZone(ZoneId.systemDefault()))
-        val patientName = profile?.name ?: "Nao informado"
+        val patientName = profile?.name ?: "Não informado"
         val patientAge = profile?.age?.toString() ?: "-"
 
-        drawLine("Relatorio de Pressao Arterial", titlePaint, 26f)
+        drawLine("Relatório de Pressão Arterial", titlePaint, 26f)
         drawLine("Paciente: $patientName | Idade: $patientAge")
         drawLine("Gerado em: $nowFormatted")
         drawLine("")
 
-        drawLine("Resumo Estatistico", sectionPaint, 24f)
+        drawLine("Resumo Estatístico", sectionPaint, 24f)
         val highest = summary.highestRecord
         val lowest = summary.lowestRecord
         val averageSystolic = summary.averageSystolic?.toString() ?: "-"
         val averageDiastolic = summary.averageDiastolic?.toString() ?: "-"
 
-        drawLine("Pico maximo: ${formatRecord(highest, dateTimeFormatter)}")
-        drawLine("Pico minimo: ${formatRecord(lowest, dateTimeFormatter)}")
-        drawLine("Pressao media: $averageSystolic/$averageDiastolic mmHg")
+        drawLine("Pico máximo: ${formatRecord(highest, dateTimeFormatter)}")
+        drawLine("Pico mínimo: ${formatRecord(lowest, dateTimeFormatter)}")
+        drawLine("Pressão média: $averageSystolic/$averageDiastolic mmHg")
         drawLine("")
 
-        drawLine("Historico detalhado", sectionPaint, 24f)
+        drawLine("Histórico detalhado", sectionPaint, 24f)
         if (records.isEmpty()) {
-            drawLine("Nenhum registro encontrado no periodo.")
+            drawLine("Nenhum registro encontrado no período.")
         } else {
             records.forEach { record ->
                 val date = dateTimeFormatter.format(
