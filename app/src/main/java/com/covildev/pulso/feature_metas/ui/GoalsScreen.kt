@@ -29,7 +29,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -71,7 +73,13 @@ fun GoalsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(title = { Text("Metas") })
+            TopAppBar(
+                title = { Text("Metas") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            )
         },
         snackbarHost = {
             SnackbarHost(snackbarHostState)
@@ -231,6 +239,9 @@ fun GoalsScreen(
                 }
 
                 TextButton(
+                    colors = TextButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.secondary,
+                    ),
                     onClick = {
                         val now = LocalTime.now()
                         TimePickerDialog(
@@ -249,6 +260,9 @@ fun GoalsScreen(
                 }
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
+                    colors = TextButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.secondary,
+                    ),
                     onClick = {
                         coroutineScope.launch {
                             val result = viewModel.saveGoals()
@@ -281,7 +295,12 @@ fun GoalsScreen(
                 DayRecordsContent(records = records)
             },
             confirmButton = {
-                TextButton(onClick = { selectedDayForRecords = -1 }) {
+                TextButton(
+                    onClick = { selectedDayForRecords = -1 },
+                    colors = TextButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.secondary,
+                    ),
+                ) {
                     Text("Fechar")
                 }
             },

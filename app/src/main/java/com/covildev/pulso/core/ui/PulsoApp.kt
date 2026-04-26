@@ -19,14 +19,17 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,7 +64,9 @@ fun PulsoApp(
     val profileUiState by profileViewModel.uiState.collectAsStateWithLifecycle()
     if (profileUiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.secondary,
+            )
         }
         return
     }
@@ -148,6 +153,11 @@ private fun MainAppScaffold(
                     NavigationBarItem(
                         selected = currentTab == tab,
                         onClick = { currentTab = tab },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.onSecondary,
+                            selectedTextColor = MaterialTheme.colorScheme.secondary,
+                            indicatorColor = MaterialTheme.colorScheme.secondary,
+                        ),
                         icon = {
                             Icon(
                                 imageVector = tab.icon,
@@ -219,6 +229,9 @@ private fun EditProfileDialog(
         },
         confirmButton = {
             TextButton(
+                colors = TextButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.secondary,
+                ),
                 onClick = {
                     coroutineScope.launch {
                         val result = onSaveProfile(name, age)
@@ -234,7 +247,12 @@ private fun EditProfileDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = TextButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.secondary,
+                ),
+            ) {
                 Text("Cancelar")
             }
         },

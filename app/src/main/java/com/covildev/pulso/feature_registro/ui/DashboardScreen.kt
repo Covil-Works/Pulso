@@ -46,7 +46,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +68,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.domain.model.RiskLevel
+import com.covildev.pulso.ui.theme.RiskGood
+import com.covildev.pulso.ui.theme.RiskHigh
+import com.covildev.pulso.ui.theme.RiskWarning
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -124,6 +129,11 @@ fun DashboardScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Principal") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
                 actions = {
                     IconButton(onClick = { showOptionsMenu = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Menu")
@@ -144,7 +154,11 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { openNewRecordSheet() }) {
+            FloatingActionButton(
+                onClick = { openNewRecordSheet() },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar registro")
             }
         },
@@ -190,7 +204,7 @@ fun DashboardScreen(
                     RecentRecordCard(
                         record = record,
                         isExpanded = expandedRecordId == record.id,
-                        activeContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        activeContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
                         onCardClick = {
                             expandedRecordId = if (expandedRecordId == record.id) null else record.id
                         },
@@ -264,6 +278,9 @@ fun DashboardScreen(
                 }
                 TextButton(
                     modifier = Modifier.align(Alignment.End),
+                    colors = TextButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.secondary,
+                    ),
                     onClick = {
                         coroutineScope.launch {
                             val saveResult = when (sheetMode) {
@@ -395,9 +412,9 @@ private fun RecentRecordCard(
     onEditClick: () -> Unit,
 ) {
     val riskColor = when (record.riskLevel) {
-        RiskLevel.GOOD -> Color(0xFF2E7D32)
-        RiskLevel.WARNING -> Color(0xFFF9A825)
-        RiskLevel.RISK -> Color(0xFFC62828)
+        RiskLevel.GOOD -> RiskGood
+        RiskLevel.WARNING -> RiskWarning
+        RiskLevel.RISK -> RiskHigh
     }
     val containerColor by animateColorAsState(
         targetValue = if (isExpanded) activeContainerColor else Color.Transparent,
@@ -405,7 +422,7 @@ private fun RecentRecordCard(
         label = "recordCardContainerColor",
     )
     val borderColor by animateColorAsState(
-        targetValue = if (isExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        targetValue = if (isExpanded) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "recordCardBorderColor",
     )
@@ -456,7 +473,12 @@ private fun RecentRecordCard(
                     horizontalAlignment = Alignment.End,
                 ) {
                     Spacer(modifier = Modifier.height(2.dp))
-                    TextButton(onClick = onEditClick) {
+                    TextButton(
+                        onClick = onEditClick,
+                        colors = TextButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.secondary,
+                        ),
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Editar",

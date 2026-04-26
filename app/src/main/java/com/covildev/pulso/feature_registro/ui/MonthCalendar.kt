@@ -121,7 +121,7 @@ fun MonthCalendar(
                                             Modifier.border(
                                                 border = BorderStroke(
                                                     width = 2.dp,
-                                                    color = MaterialTheme.colorScheme.primary,
+                                                    color = MaterialTheme.colorScheme.secondary,
                                                 ),
                                                 shape = CircleShape,
                                             )
