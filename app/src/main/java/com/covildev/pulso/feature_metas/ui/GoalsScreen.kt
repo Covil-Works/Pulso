@@ -34,8 +34,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.covildev.pulso.feature_registro.ui.MonthCalendar
 import kotlinx.coroutines.launch
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -67,6 +69,16 @@ fun GoalsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            item {
+                MonthCalendar(
+                    month = uiState.selectedMonth,
+                    highlightedDays = uiState.highlightedDays,
+                    onPreviousMonth = viewModel::goToPreviousMonth,
+                    onNextMonth = viewModel::goToNextMonth,
+                    canGoNextMonth = uiState.selectedMonth < YearMonth.now(),
+                )
+            }
+
             item {
                 Card(
                     colors = CardDefaults.cardColors(

@@ -19,10 +19,13 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
 data class GoalsUiState(
+    val selectedMonth: YearMonth = YearMonth.now(),
+    val highlightedDays: Set<Int> = emptySet(),
     val selectedDays: Set<Int> = emptySet(),
     val selectedTimes: List<LocalTime> = emptyList(),
     val progressMessage: String = "Defina os dias e horarios para montar sua rotina.",
@@ -40,13 +43,25 @@ class GoalsViewModel @Inject constructor(
     private val saveGoalsUseCase: SaveGoalsUseCase,
 ) : ViewModel() {
     private val editorState = MutableStateFlow(GoalEditorState())
+    private val selectedMonth = MutableStateFlow(YearMonth.now())
     private val recordsFlow = observeAllRecordsUseCase().catch { emit(emptyList()) }
 
     val uiState: StateFlow<GoalsUiState> = combine(
+        selectedMonth,
         editorState,
         recordsFlow,
-    ) { editor, records ->
+    ) { month, editor, records ->
         GoalsUiState(
+            selectedMonth = month,
+            highlightedDays = records
+                .map {
+                    Instant.ofEpochMilli(it.timestamp)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                }
+                .filter { YearMonth.from(it) == month }
+                .map { it.dayOfMonth }
+                .toSet(),
             selectedDays = editor.selectedDays,
             selectedTimes = editor.selectedTimes,
             progressMessage = buildProgressMessage(
@@ -83,6 +98,17 @@ class GoalsViewModel @Inject constructor(
                 current.selectedDays + dayOfWeek
             }
             current.copy(selectedDays = updatedDays)
+        }
+    }
+
+    fun goToPreviousMonth() {
+        selectedMonth.value = selectedMonth.value.minusMonths(1)
+    }
+
+    fun goToNextMonth() {
+        val currentMonth = YearMonth.now()
+        if (selectedMonth.value < currentMonth) {
+            selectedMonth.value = selectedMonth.value.plusMonths(1)
         }
     }
 
