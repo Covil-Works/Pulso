@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -290,6 +291,18 @@ private fun ReportGenerationSection(
     isGenerating: Boolean,
     onGenerateReport: () -> Unit,
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val buttonContainerColor = if (isDarkTheme) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.secondary
+    }
+    val buttonContentColor = if (isDarkTheme) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSecondary
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -320,10 +333,10 @@ private fun ReportGenerationSection(
                 enabled = !isGenerating,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
-                    disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                    disabledContentColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f),
+                    containerColor = buttonContainerColor,
+                    contentColor = buttonContentColor,
+                    disabledContainerColor = buttonContainerColor.copy(alpha = 0.5f),
+                    disabledContentColor = buttonContentColor.copy(alpha = 0.7f),
                 ),
             ) {
                 Text("Gerar relatório em PDF")
