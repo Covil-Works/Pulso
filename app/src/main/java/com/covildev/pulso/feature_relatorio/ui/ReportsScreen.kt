@@ -182,7 +182,7 @@ fun ReportsScreen(
                     ReportRecordCard(
                         record = record,
                         isExpanded = expandedRecordId == record.id,
-                        activeContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                        activeContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f),
                         onCardClick = {
                             expandedRecordId = if (expandedRecordId == record.id) null else record.id
                         },
@@ -294,11 +294,11 @@ private fun ReportGenerationSection(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
         border = BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.outlineVariant,
         ),
     ) {
         Column(
@@ -320,10 +320,10 @@ private fun ReportGenerationSection(
                 enabled = !isGenerating,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f),
                 ),
             ) {
                 Text("Gerar relatório em PDF")

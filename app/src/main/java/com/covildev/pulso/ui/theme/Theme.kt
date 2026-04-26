@@ -1,19 +1,25 @@
 package com.covildev.pulso.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkPrimary,
-    secondary = DarkSecondary,
-    tertiary = DarkTertiary,
+    primary = PrimaryGreen,
+    onPrimary = PureWhite,
+    secondary = SecondaryBlue,
+    onSecondary = PureWhite,
+    tertiary = SecondaryBlue,
+    onTertiary = PureWhite,
+    background = DarkBackground,
+    surface = DarkSurface,
+    surfaceContainerLow = DarkSurfaceContainerLow,
+    onBackground = DarkOnSurface,
+    onSurface = DarkOnSurface,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outlineVariant = DarkOutlineVariant,
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -32,19 +38,11 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun PulsoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
+    // Kept for API stability, but ignored to preserve brand palette in all modes.
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

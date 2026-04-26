@@ -204,7 +204,7 @@ fun DashboardScreen(
                     RecentRecordCard(
                         record = record,
                         isExpanded = expandedRecordId == record.id,
-                        activeContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                        activeContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f),
                         onCardClick = {
                             expandedRecordId = if (expandedRecordId == record.id) null else record.id
                         },
