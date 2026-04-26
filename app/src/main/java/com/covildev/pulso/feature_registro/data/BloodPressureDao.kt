@@ -23,4 +23,7 @@ interface BloodPressureDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(record: BloodPressureEntity)
+
+    @Query("DELETE FROM blood_pressure WHERE id = :recordId")
+    suspend fun deleteById(recordId: Long)
 }

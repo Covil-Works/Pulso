@@ -9,4 +9,5 @@ interface BloodPressureRepository {
     suspend fun getAllRecords(): List<BloodPressureRecord>
     suspend fun insertRecord(record: BloodPressureRecord)
     suspend fun updateRecord(record: BloodPressureRecord)
+    suspend fun deleteRecord(recordId: Long)
 }

@@ -26,8 +26,11 @@ import javax.inject.Inject
 data class GoalsUiState(
     val selectedMonth: YearMonth = YearMonth.now(),
     val highlightedDays: Set<Int> = emptySet(),
-    val selectedDays: Set<Int> = emptySet(),
-    val selectedTimes: List<LocalTime> = emptyList(),
+    val recordsByDay: Map<Int, List<BloodPressureRecord>> = emptyMap(),
+    val previewSelectedDays: Set<Int> = emptySet(),
+    val previewSelectedTimes: List<LocalTime> = emptyList(),
+    val editorSelectedDays: Set<Int> = emptySet(),
+    val editorSelectedTimes: List<LocalTime> = emptyList(),
     val progressMessage: String = "Defina os dias e horarios para montar sua rotina.",
 )
 
@@ -43,29 +46,42 @@ class GoalsViewModel @Inject constructor(
     private val saveGoalsUseCase: SaveGoalsUseCase,
 ) : ViewModel() {
     private val editorState = MutableStateFlow(GoalEditorState())
+    private val savedState = MutableStateFlow(GoalEditorState())
     private val selectedMonth = MutableStateFlow(YearMonth.now())
     private val recordsFlow = observeAllRecordsUseCase().catch { emit(emptyList()) }
 
     val uiState: StateFlow<GoalsUiState> = combine(
         selectedMonth,
+        savedState,
         editorState,
         recordsFlow,
-    ) { month, editor, records ->
+    ) { month, saved, editor, records ->
+        val recordsByDay = records
+            .mapNotNull { record ->
+                val localDate = Instant.ofEpochMilli(record.timestamp)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                if (YearMonth.from(localDate) == month) {
+                    localDate.dayOfMonth to record
+                } else {
+                    null
+                }
+            }
+            .groupBy(
+                keySelector = { it.first },
+                valueTransform = { it.second },
+            )
+
         GoalsUiState(
             selectedMonth = month,
-            highlightedDays = records
-                .map {
-                    Instant.ofEpochMilli(it.timestamp)
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate()
-                }
-                .filter { YearMonth.from(it) == month }
-                .map { it.dayOfMonth }
-                .toSet(),
-            selectedDays = editor.selectedDays,
-            selectedTimes = editor.selectedTimes,
+            highlightedDays = recordsByDay.keys,
+            recordsByDay = recordsByDay,
+            previewSelectedDays = saved.selectedDays,
+            previewSelectedTimes = saved.selectedTimes,
+            editorSelectedDays = editor.selectedDays,
+            editorSelectedTimes = editor.selectedTimes,
             progressMessage = buildProgressMessage(
-                selectedDays = editor.selectedDays,
+                selectedDays = saved.selectedDays,
                 records = records,
             ),
         )
@@ -80,14 +96,19 @@ class GoalsViewModel @Inject constructor(
             observeGoalsUseCase()
                 .catch { emit(null) }
                 .collect { goals ->
-                    if (goals != null) {
-                        editorState.value = GoalEditorState(
-                            selectedDays = goals.daysOfWeek,
-                            selectedTimes = goals.timesOfDay.sorted(),
-                        )
-                    }
+                    val nextState = goals?.toEditorState() ?: GoalEditorState()
+                    savedState.value = nextState
+                    editorState.value = nextState
                 }
         }
+    }
+
+    fun startEditingGoals() {
+        editorState.value = savedState.value
+    }
+
+    fun restoreEditorFromSaved() {
+        editorState.value = savedState.value
     }
 
     fun toggleDay(dayOfWeek: Int) {
@@ -127,13 +148,24 @@ class GoalsViewModel @Inject constructor(
 
     suspend fun saveGoals(): Result<Unit> {
         val current = editorState.value
-        return saveGoalsUseCase(
+        val result = saveGoalsUseCase(
             GoalSettings(
                 daysOfWeek = current.selectedDays,
                 timesOfDay = current.selectedTimes,
             ),
         )
+        if (result.isSuccess) {
+            savedState.value = current
+        }
+        return result
     }
+}
+
+private fun GoalSettings.toEditorState(): GoalEditorState {
+    return GoalEditorState(
+        selectedDays = daysOfWeek,
+        selectedTimes = timesOfDay.sorted(),
+    )
 }
 
 private fun buildProgressMessage(

@@ -32,6 +32,10 @@ class BloodPressureRepositoryImpl @Inject constructor(
     override suspend fun updateRecord(record: BloodPressureRecord) {
         dao.insert(record.toEntity())
     }
+
+    override suspend fun deleteRecord(recordId: Long) {
+        dao.deleteById(recordId)
+    }
 }
 
 private fun BloodPressureEntity.toDomain(): BloodPressureRecord {

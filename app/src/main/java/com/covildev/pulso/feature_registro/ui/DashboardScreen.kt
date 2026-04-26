@@ -72,7 +72,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private const val MAX_RECENT_RECORDS = 30
+private const val MAX_RECENT_RECORDS = 3
 
 private sealed interface DashboardBottomSheetMode {
     data object NewRecord : DashboardBottomSheetMode
@@ -170,7 +170,7 @@ fun DashboardScreen(
             }
             item {
                 Text(
-                    text = "\u00DAltimos registros",
+                    text = "Ultimos",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
@@ -326,30 +326,33 @@ private fun AveragePressureHeadline(
             textAlign = TextAlign.Center,
         )
         Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
                 text = averageSystolic?.toString() ?: "--",
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
+                modifier = Modifier.alignByBaseline(),
             )
             Text(
                 text = "/",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.alignByBaseline(),
             )
             Text(
                 text = averageDiastolic?.toString() ?: "--",
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
+                modifier = Modifier.alignByBaseline(),
+            )
+            Text(
+                text = "mmHg",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.alignByBaseline(),
             )
         }
-        Text(
-            text = "mmHg",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

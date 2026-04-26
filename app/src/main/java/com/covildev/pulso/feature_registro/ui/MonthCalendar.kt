@@ -3,6 +3,7 @@ package com.covildev.pulso.feature_registro.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ fun MonthCalendar(
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     canGoNextMonth: Boolean,
+    onDayClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("pt-BR"))
@@ -107,6 +109,13 @@ fun MonthCalendar(
                             Box(
                                 modifier = Modifier
                                     .size(34.dp)
+                                    .then(
+                                        if (isHighlighted) {
+                                            Modifier.clickable { onDayClick(dayNumber) }
+                                        } else {
+                                            Modifier
+                                        },
+                                    )
                                     .then(
                                         if (isHighlighted) {
                                             Modifier.border(

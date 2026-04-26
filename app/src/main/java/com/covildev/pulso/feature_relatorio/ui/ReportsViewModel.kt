@@ -2,17 +2,32 @@ package com.covildev.pulso.feature_relatorio.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
+import com.covildev.pulso.feature_registro.domain.model.RiskLevel
+import com.covildev.pulso.feature_registro.domain.usecase.DeleteBloodPressureRecordUseCase
+import com.covildev.pulso.feature_registro.domain.usecase.ObserveAllRecordsUseCase
+import com.covildev.pulso.feature_registro.domain.usecase.UpdateBloodPressureRecordUseCase
 import com.covildev.pulso.feature_relatorio.domain.model.GeneratedReport
 import com.covildev.pulso.feature_relatorio.domain.usecase.GeneratePdfReportUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class ReportsUiState(
+    val records: List<BloodPressureRecord> = emptyList(),
+    val isGenerating: Boolean = false,
+    val generatedReport: GeneratedReport? = null,
+    val errorMessage: String? = null,
+)
+
+private data class ReportGenerationState(
     val isGenerating: Boolean = false,
     val generatedReport: GeneratedReport? = null,
     val errorMessage: String? = null,
@@ -21,16 +36,40 @@ data class ReportsUiState(
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
     private val generatePdfReportUseCase: GeneratePdfReportUseCase,
+    observeAllRecordsUseCase: ObserveAllRecordsUseCase,
+    private val updateBloodPressureRecordUseCase: UpdateBloodPressureRecordUseCase,
+    private val deleteBloodPressureRecordUseCase: DeleteBloodPressureRecordUseCase,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(ReportsUiState())
-    val uiState: StateFlow<ReportsUiState> = _uiState.asStateFlow()
+    private val reportGenerationState = MutableStateFlow(ReportGenerationState())
+    private val recordsFlow = observeAllRecordsUseCase().catch { emit(emptyList()) }
+
+    val uiState: StateFlow<ReportsUiState> = combine(
+        recordsFlow,
+        reportGenerationState,
+    ) { records, reportState ->
+        ReportsUiState(
+            records = records,
+            isGenerating = reportState.isGenerating,
+            generatedReport = reportState.generatedReport,
+            errorMessage = reportState.errorMessage,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = ReportsUiState(),
+    )
 
     fun generateReport() {
-        if (_uiState.value.isGenerating) return
+        if (reportGenerationState.value.isGenerating) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isGenerating = true, errorMessage = null) }
+            reportGenerationState.update {
+                it.copy(
+                    isGenerating = true,
+                    errorMessage = null,
+                )
+            }
             val result = generatePdfReportUseCase()
-            _uiState.update { current ->
+            reportGenerationState.update { current ->
                 if (result.isSuccess) {
                     current.copy(
                         isGenerating = false,
@@ -47,7 +86,30 @@ class ReportsViewModel @Inject constructor(
         }
     }
 
+    suspend fun updateRecord(
+        record: BloodPressureRecord,
+        systolicInput: String,
+        diastolicInput: String,
+        notes: String?,
+    ): Result<RiskLevel> {
+        val systolic = systolicInput.toIntOrNull()
+            ?: return Result.failure(IllegalArgumentException("Informe a pressao sistolica."))
+        val diastolic = diastolicInput.toIntOrNull()
+            ?: return Result.failure(IllegalArgumentException("Informe a pressao diastolica."))
+
+        return updateBloodPressureRecordUseCase(
+            record = record,
+            systolic = systolic,
+            diastolic = diastolic,
+            notes = notes,
+        )
+    }
+
+    suspend fun deleteRecord(record: BloodPressureRecord): Result<Unit> {
+        return deleteBloodPressureRecordUseCase(record)
+    }
+
     fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
+        reportGenerationState.update { it.copy(errorMessage = null) }
     }
 }
