@@ -37,7 +37,7 @@ class ProfileViewModel @Inject constructor(
 
     suspend fun saveProfile(name: String, ageInput: String): Result<Unit> {
         val age = ageInput.trim().toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("A idade deve ser numerica."))
+            ?: return Result.failure(IllegalArgumentException("A idade deve ser numérica."))
         return saveUserProfileUseCase(name = name, age = age)
     }
 }

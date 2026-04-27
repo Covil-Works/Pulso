@@ -41,6 +41,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -86,6 +87,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private const val MAX_RECENT_RECORDS = 3
+private val InactiveRecordBorderColor = Color(0xFFE7EAF0)
 
 private sealed interface DashboardBottomSheetMode {
     data object NewRecord : DashboardBottomSheetMode
@@ -218,7 +220,7 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Ultimos Registros",
+                        text = "Últimos registros",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -289,7 +291,7 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f),
                         value = systolicInput,
                         onValueChange = { systolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Sistolica") },
+                        label = { Text("Sistólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -297,7 +299,7 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f),
                         value = diastolicInput,
                         onValueChange = { diastolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Diastolica") },
+                        label = { Text("Diastólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -308,7 +310,7 @@ fun DashboardScreen(
                             checked = includeNotes,
                             onCheckedChange = { includeNotes = it },
                         )
-                        Text("Adicionar observacao")
+                        Text("Adicionar observação")
                     }
                 }
                 if (sheetMode is DashboardBottomSheetMode.EditRecord || includeNotes) {
@@ -316,7 +318,7 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         value = notesInput,
                         onValueChange = { notesInput = it },
-                        label = { Text("Observacao") },
+                        label = { Text("Observação") },
                     )
                 }
                 TextButton(
@@ -356,7 +358,7 @@ fun DashboardScreen(
                             } else {
                                 snackbarHostState.showSnackbar(
                                     saveResult.exceptionOrNull()?.message
-                                        ?: "Nao foi possivel salvar o registro.",
+                                        ?: "Não foi possível salvar o registro.",
                                 )
                             }
                         }
@@ -377,24 +379,22 @@ private fun DashboardHeroSection(
 ) {
     val streakLabel = if (streakDays == 1) "1 dia" else "$streakDays dias seguidos"
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = PureWhite,
-        shape = RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp),
-        shadowElevation = 3.dp,
-        tonalElevation = 0.dp,
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(PureWhite),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "PRESSAO MEDIA (7 DIAS)",
+                text = "Pressão Média (7 dias)",
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = SecondaryBlueLight,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
             )
@@ -411,7 +411,7 @@ private fun DashboardHeroSection(
                 Text(
                     text = "/",
                     style = MaterialTheme.typography.displayMedium,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = SecondaryBlueLight,
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(
@@ -448,7 +448,7 @@ private fun DashboardHeroSection(
                         modifier = Modifier.size(18.dp),
                     )
                     Text(
-                        text = "Sequencia:",
+                        text = "Sequência:",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -461,6 +461,11 @@ private fun DashboardHeroSection(
                 }
             }
         }
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(),
+            thickness = 1.dp,
+            color = InactiveRecordBorderColor,
+        )
     }
 }
 
@@ -483,7 +488,7 @@ private fun RecentRecordCard(
         label = "recordCardContainerColor",
     )
     val borderColor by animateColorAsState(
-        targetValue = if (isExpanded) MaterialTheme.colorScheme.secondary else Color(0xFFE7EAF0),
+        targetValue = if (isExpanded) MaterialTheme.colorScheme.secondary else InactiveRecordBorderColor,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "recordCardBorderColor",
     )

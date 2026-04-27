@@ -12,19 +12,19 @@ object BloodPressureInputValidator {
         diastolic: Int,
     ): String? {
         if (systolic !in MIN_SYSTOLIC..MAX_SYSTOLIC) {
-            return "Sistolica fora da faixa esperada ($MIN_SYSTOLIC-$MAX_SYSTOLIC mmHg)."
+            return "Sistólica fora da faixa esperada ($MIN_SYSTOLIC-$MAX_SYSTOLIC mmHg)."
         }
 
         if (diastolic !in MIN_DIASTOLIC..MAX_DIASTOLIC) {
-            return "Diastolica fora da faixa esperada ($MIN_DIASTOLIC-$MAX_DIASTOLIC mmHg)."
+            return "Diastólica fora da faixa esperada ($MIN_DIASTOLIC-$MAX_DIASTOLIC mmHg)."
         }
 
         if (systolic <= diastolic) {
-            return "A sistolica deve ser maior que a diastolica."
+            return "A sistólica deve ser maior que a diastólica."
         }
 
         if ((systolic - diastolic) < MIN_PULSE_PRESSURE) {
-            return "A diferenca entre sistolica e diastolica parece invalida."
+            return "A diferença entre sistólica e diastólica parece inválida."
         }
 
         return null

@@ -1,8 +1,8 @@
 package com.covildev.pulso.feature_registro.domain.model
 
 enum class RiskLevel(val label: String) {
-    GOOD("Otima"),
-    WARNING("Atencao"),
+    GOOD("Ótima"),
+    WARNING("Atenção"),
     RISK("Risco");
 
     companion object {
