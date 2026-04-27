@@ -40,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -148,7 +149,10 @@ private fun MainAppScaffold(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 0.dp,
+            ) {
                 MainTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = currentTab == tab,
@@ -175,6 +179,7 @@ private fun MainAppScaffold(
             MainTab.DASHBOARD -> DashboardScreen(
                 modifier = contentModifier,
                 onProfileRequested = { showProfileDialog = true },
+                onViewAllRequested = { currentTab = MainTab.REPORTS },
             )
 
             MainTab.GOALS -> GoalsScreen(modifier = contentModifier)

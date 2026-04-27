@@ -13,19 +13,18 @@ class AddBloodPressureRecordUseCase @Inject constructor(
         diastolic: Int,
         notes: String?,
     ): Result<RiskLevel> {
-        if (systolic !in 1..299 || diastolic !in 1..299) {
-            return Result.failure(
-                IllegalArgumentException("A pressão deve ser um número inteiro entre 1 e 299."),
-            )
+        val validationError = BloodPressureInputValidator.validate(
+            systolic = systolic,
+            diastolic = diastolic,
+        )
+        if (validationError != null) {
+            return Result.failure(IllegalArgumentException(validationError))
         }
 
-        if (systolic <= diastolic) {
-            return Result.failure(
-                IllegalArgumentException("A sistólica deve ser maior do que a diastólica."),
-            )
-        }
-
-        val riskLevel = RiskLevel.fromPressure(systolic = systolic, diastolic = diastolic)
+        val riskLevel = RiskLevel.fromPressure(
+            systolic = systolic,
+            diastolic = diastolic,
+        )
         val normalizedNote = notes?.trim().orEmpty().ifBlank { null }
         repository.insertRecord(
             BloodPressureRecord(

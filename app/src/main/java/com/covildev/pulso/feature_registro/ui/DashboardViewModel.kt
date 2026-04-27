@@ -33,10 +33,19 @@ class DashboardViewModel @Inject constructor(
     private val allRecords = observeAllRecordsUseCase()
 
     val uiState: StateFlow<DashboardUiState> = allRecords.map { records ->
+        val rollingWindowRecords = records.filterRecordsFromLastDays(days = 7)
         DashboardUiState(
             records = records,
-            averageSystolic = records.takeIf { it.isNotEmpty() }?.map { it.systolic }?.average()?.toInt(),
-            averageDiastolic = records.takeIf { it.isNotEmpty() }?.map { it.diastolic }?.average()?.toInt(),
+            averageSystolic = rollingWindowRecords
+                .takeIf { it.isNotEmpty() }
+                ?.map { it.systolic }
+                ?.average()
+                ?.toInt(),
+            averageDiastolic = rollingWindowRecords
+                .takeIf { it.isNotEmpty() }
+                ?.map { it.diastolic }
+                ?.average()
+                ?.toInt(),
             streakDays = calculateStreak(records),
         )
     }.stateIn(
@@ -51,9 +60,9 @@ class DashboardViewModel @Inject constructor(
         notes: String?,
     ): Result<RiskLevel> {
         val systolic = systolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressão sistólica."))
+            ?: return Result.failure(IllegalArgumentException("Informe a pressao sistolica."))
         val diastolic = diastolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressão diastólica."))
+            ?: return Result.failure(IllegalArgumentException("Informe a pressao diastolica."))
 
         return addBloodPressureRecordUseCase(
             systolic = systolic,
@@ -69,9 +78,9 @@ class DashboardViewModel @Inject constructor(
         notes: String?,
     ): Result<RiskLevel> {
         val systolic = systolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressão sistólica."))
+            ?: return Result.failure(IllegalArgumentException("Informe a pressao sistolica."))
         val diastolic = diastolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressão diastólica."))
+            ?: return Result.failure(IllegalArgumentException("Informe a pressao diastolica."))
 
         return updateBloodPressureRecordUseCase(
             record = record,
@@ -94,4 +103,15 @@ private fun calculateStreak(records: List<BloodPressureRecord>): Int {
         cursor = cursor.minusDays(1)
     }
     return streak
+}
+
+private fun List<BloodPressureRecord>.filterRecordsFromLastDays(
+    days: Long,
+): List<BloodPressureRecord> {
+    val zone = ZoneId.systemDefault()
+    val startDate = LocalDate.now(zone).minusDays(days - 1)
+    val startInstant = startDate.atStartOfDay(zone).toInstant()
+    return filter { record ->
+        Instant.ofEpochMilli(record.timestamp).isAfter(startInstant.minusMillis(1))
+    }
 }
