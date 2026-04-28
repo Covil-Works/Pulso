@@ -1,6 +1,9 @@
 # Pulso
+<p align="center">
+  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" alt="Logo do Pulso" width="120" />
+</p>
 
-Aplicativo Android para acompanhar pressão arterial no dia a dia, com foco em registro rápido, metas de acompanhamento e geração de relatório em PDF.
+Aplicativo Android para acompanhar pressão arterial do paciente no dia a dia, com registro rápido, metas de acompanhamento e geração de relatório em PDF.
 
 ## O que o app faz
 
