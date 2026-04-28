@@ -32,12 +32,26 @@ data class GoalsUiState(
     val editorSelectedDays: Set<Int> = emptySet(),
     val editorSelectedTimes: List<LocalTime> = emptyList(),
     val progressMessage: String = "Defina os dias e horários para montar sua rotina.",
+    val progressFraction: Float = 0f,
+    val progressLabel: String = "0%",
 )
 
 private data class GoalEditorState(
     val selectedDays: Set<Int> = emptySet(),
     val selectedTimes: List<LocalTime> = emptyList(),
 )
+
+private data class GoalProgress(
+    val completedDays: Int,
+    val expectedDays: Int,
+    val message: String,
+) {
+    val fraction: Float
+        get() = if (expectedDays == 0) 0f else completedDays.toFloat() / expectedDays.toFloat()
+
+    val label: String
+        get() = "${(fraction * 100).toInt()}%"
+}
 
 @HiltViewModel
 class GoalsViewModel @Inject constructor(
@@ -56,6 +70,10 @@ class GoalsViewModel @Inject constructor(
         editorState,
         recordsFlow,
     ) { month, saved, editor, records ->
+        val progress = buildGoalProgress(
+            selectedDays = saved.selectedDays,
+            records = records,
+        )
         val recordsByDay = records
             .mapNotNull { record ->
                 val localDate = Instant.ofEpochMilli(record.timestamp)
@@ -80,10 +98,9 @@ class GoalsViewModel @Inject constructor(
             previewSelectedTimes = saved.selectedTimes,
             editorSelectedDays = editor.selectedDays,
             editorSelectedTimes = editor.selectedTimes,
-            progressMessage = buildProgressMessage(
-                selectedDays = saved.selectedDays,
-                records = records,
-            ),
+            progressMessage = progress.message,
+            progressFraction = progress.fraction,
+            progressLabel = progress.label,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -168,12 +185,16 @@ private fun GoalSettings.toEditorState(): GoalEditorState {
     )
 }
 
-private fun buildProgressMessage(
+private fun buildGoalProgress(
     selectedDays: Set<Int>,
     records: List<BloodPressureRecord>,
-): String {
+): GoalProgress {
     if (selectedDays.isEmpty()) {
-        return "Selecione dias da semana e horários para ativar metas de lembrete."
+        return GoalProgress(
+            completedDays = 0,
+            expectedDays = 0,
+            message = "Selecione dias da semana e horários para ativar metas de lembrete.",
+        )
     }
 
     val recordDates = records.map {
@@ -194,11 +215,23 @@ private fun buildProgressMessage(
     }
 
     if (expectedDays == 0) {
-        return "Nenhuma medição esperada nos últimos 7 dias com as regras atuais."
+        return GoalProgress(
+            completedDays = 0,
+            expectedDays = 0,
+            message = "Nenhuma medição esperada nos últimos 7 dias com as regras atuais.",
+        )
     }
     if (completedDays == expectedDays) {
-        return "Excelente! Você cumpriu $completedDays de $expectedDays dias previstos."
+        return GoalProgress(
+            completedDays = completedDays,
+            expectedDays = expectedDays,
+            message = "Excelente! Você cumpriu $completedDays de $expectedDays dias previstos.",
+        )
     }
     val missedDays = expectedDays - completedDays
-    return "Você registrou em $completedDays de $expectedDays dias previstos. Faltaram $missedDays dia(s)."
+    return GoalProgress(
+        completedDays = completedDays,
+        expectedDays = expectedDays,
+        message = "Você registrou em $completedDays de $expectedDays dias previstos. Faltaram $missedDays dia(s).",
+    )
 }
