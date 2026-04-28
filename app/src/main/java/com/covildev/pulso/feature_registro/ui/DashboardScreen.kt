@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -278,14 +279,65 @@ fun DashboardScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = if (sheetMode is DashboardBottomSheetMode.EditRecord) {
-                        "Editar registro"
-                    } else {
-                        "Novo registro"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = if (sheetMode is DashboardBottomSheetMode.EditRecord) {
+                            "Editar registro"
+                        } else {
+                            "Novo registro"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = Color.White,
+                        ),
+                        onClick = {
+                            coroutineScope.launch {
+                                val saveResult = when (sheetMode) {
+                                    is DashboardBottomSheetMode.NewRecord -> {
+                                        viewModel.addRecord(
+                                            systolicInput = systolicInput,
+                                            diastolicInput = diastolicInput,
+                                            notes = notesInput.takeIf { includeNotes },
+                                        )
+                                    }
+                                    is DashboardBottomSheetMode.EditRecord -> {
+                                        viewModel.updateRecord(
+                                            record = sheetMode.record,
+                                            systolicInput = systolicInput,
+                                            diastolicInput = diastolicInput,
+                                            notes = notesInput,
+                                        )
+                                    }
+                                }
+                                if (saveResult.isSuccess) {
+                                    bottomSheetMode = null
+                                    resetBottomSheetInputs()
+                                    val riskLabel = saveResult.getOrNull()?.label ?: ""
+                                    if (sheetMode is DashboardBottomSheetMode.EditRecord) {
+                                        expandedRecordId = null
+                                        snackbarHostState.showSnackbar("Registro atualizado ($riskLabel).")
+                                    } else {
+                                        snackbarHostState.showSnackbar("Registro salvo ($riskLabel).")
+                                    }
+                                } else {
+                                    snackbarHostState.showSnackbar(
+                                        saveResult.exceptionOrNull()?.message
+                                            ?: "Não foi possível salvar o registro.",
+                                    )
+                                }
+                            }
+                        },
+                    ) {
+                        Text("Salvar")
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         modifier = Modifier.weight(1f),
@@ -320,51 +372,6 @@ fun DashboardScreen(
                         onValueChange = { notesInput = it },
                         label = { Text("Observação") },
                     )
-                }
-                TextButton(
-                    modifier = Modifier.align(Alignment.End),
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.secondary,
-                    ),
-                    onClick = {
-                        coroutineScope.launch {
-                            val saveResult = when (sheetMode) {
-                                is DashboardBottomSheetMode.NewRecord -> {
-                                    viewModel.addRecord(
-                                        systolicInput = systolicInput,
-                                        diastolicInput = diastolicInput,
-                                        notes = notesInput.takeIf { includeNotes },
-                                    )
-                                }
-                                is DashboardBottomSheetMode.EditRecord -> {
-                                    viewModel.updateRecord(
-                                        record = sheetMode.record,
-                                        systolicInput = systolicInput,
-                                        diastolicInput = diastolicInput,
-                                        notes = notesInput,
-                                    )
-                                }
-                            }
-                            if (saveResult.isSuccess) {
-                                bottomSheetMode = null
-                                resetBottomSheetInputs()
-                                val riskLabel = saveResult.getOrNull()?.label ?: ""
-                                if (sheetMode is DashboardBottomSheetMode.EditRecord) {
-                                    expandedRecordId = null
-                                    snackbarHostState.showSnackbar("Registro atualizado ($riskLabel).")
-                                } else {
-                                    snackbarHostState.showSnackbar("Registro salvo ($riskLabel).")
-                                }
-                            } else {
-                                snackbarHostState.showSnackbar(
-                                    saveResult.exceptionOrNull()?.message
-                                        ?: "Não foi possível salvar o registro.",
-                                )
-                            }
-                        }
-                    },
-                ) {
-                    Text("Salvar")
                 }
             }
         }
