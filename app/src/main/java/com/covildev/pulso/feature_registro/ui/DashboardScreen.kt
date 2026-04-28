@@ -79,6 +79,7 @@ import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.domain.model.RiskLevel
 import com.covildev.pulso.ui.theme.LightSectionBackground
 import com.covildev.pulso.ui.theme.PureWhite
+import com.covildev.pulso.ui.theme.SecondaryBlue
 import com.covildev.pulso.ui.theme.SecondaryBlueLight
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -223,6 +224,7 @@ fun DashboardScreen(
                     Text(
                         text = "Últimos registros",
                         style = MaterialTheme.typography.titleLarge,
+                        color = SecondaryBlue,
                         fontWeight = FontWeight.SemiBold,
                     )
                     TextButton(onClick = onViewAllRequested) {
@@ -266,6 +268,7 @@ fun DashboardScreen(
     val sheetMode = bottomSheetMode
     if (sheetMode != null) {
         ModalBottomSheet(
+            containerColor = PureWhite,
             onDismissRequest = {
                 if (sheetMode is DashboardBottomSheetMode.EditRecord) {
                     expandedRecordId = null
@@ -413,6 +416,7 @@ private fun DashboardHeroSection(
                     text = averageSystolic?.toString() ?: "--",
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
+                    color = SecondaryBlue,
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(
@@ -440,8 +444,8 @@ private fun DashboardHeroSection(
             }
             Surface(
                 shape = RoundedCornerShape(999.dp),
-                color = Color(0xFFF2EFF9),
-                border = BorderStroke(1.dp, Color(0xFFE5DFED)),
+                color = LightSectionBackground,
+                border = BorderStroke(1.dp, InactiveRecordBorderColor),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -673,3 +677,4 @@ private fun formatRecordDate(timestamp: Long): String {
         else -> dateTime.format(fullFormatter)
     }
 }
+

@@ -159,6 +159,7 @@ private fun MainAppScaffold(
                         onClick = { currentTab = tab },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.onSecondary,
+                            unselectedIconColor = MaterialTheme.colorScheme.secondary,
                             selectedTextColor = MaterialTheme.colorScheme.secondary,
                             indicatorColor = MaterialTheme.colorScheme.secondary,
                         ),

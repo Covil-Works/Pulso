@@ -5,14 +5,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,18 +23,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +50,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -61,21 +66,46 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.domain.model.RiskLevel
-import com.covildev.pulso.ui.theme.RiskGood
-import com.covildev.pulso.ui.theme.RiskHigh
-import com.covildev.pulso.ui.theme.RiskWarning
+import com.covildev.pulso.ui.theme.LightSectionBackground
+import com.covildev.pulso.ui.theme.PureWhite
+import com.covildev.pulso.ui.theme.SecondaryBlue
+import com.covildev.pulso.ui.theme.SecondaryBlueLight
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+private val ReportCardBorderColor = Color(0xFFE6EAF2)
+private val InactiveRecordBorderColor = Color(0xFFE7EAF0)
+
+private data class RiskBadgeStyle(
+    val icon: ImageVector,
+    val containerColor: Color,
+    val borderColor: Color,
+    val contentColor: Color,
+)
+
+private data class ReportMetrics(
+    val totalRecords: Int = 0,
+    val averageSystolic: Int? = null,
+    val averageDiastolic: Int? = null,
+    val lastRecordTimestamp: Long? = null,
+    val goodCount: Int = 0,
+    val warningCount: Int = 0,
+    val riskCount: Int = 0,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,6 +121,7 @@ fun ReportsScreen(
     var systolicInput by rememberSaveable { mutableStateOf("") }
     var diastolicInput by rememberSaveable { mutableStateOf("") }
     var notesInput by rememberSaveable { mutableStateOf("") }
+    val reportMetrics = remember(uiState.records) { buildReportMetrics(uiState.records) }
     val shareReportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) {
@@ -108,14 +139,14 @@ fun ReportsScreen(
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
             putExtra(Intent.EXTRA_STREAM, report.uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Relatório de Pressão")
+            putExtra(Intent.EXTRA_SUBJECT, "Relatorio de Pressao")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         runCatching {
             shareReportLauncher.launch(Intent.createChooser(shareIntent, "Compartilhar ou salvar PDF"))
         }.onFailure {
             viewModel.clearGeneratedReport()
-            snackbarHostState.showSnackbar("Não foi possível abrir o compartilhamento.")
+            snackbarHostState.showSnackbar("Nao foi possivel abrir o compartilhamento.")
         }
     }
 
@@ -128,9 +159,10 @@ fun ReportsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = LightSectionBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Relatórios") },
+                title = { Text("Relatorios") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -144,35 +176,32 @@ fun ReportsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
+                .padding(innerPadding)
+                .background(LightSectionBackground),
+            contentPadding = PaddingValues(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
+                ReportsHeroSection(metrics = reportMetrics)
+            }
+            item {
                 ReportGenerationSection(
+                    modifier = Modifier.padding(horizontal = 18.dp),
                     isGenerating = uiState.isGenerating,
                     onGenerateReport = viewModel::generateReport,
                 )
             }
-            if (uiState.isGenerating) {
-                item {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.secondary,
-                    )
-                }
-            }
             item {
-                Text(
-                    text = "Histórico completo",
-                    style = MaterialTheme.typography.titleMedium,
+                ReportsSectionHeader(
+                    modifier = Modifier.padding(horizontal = 18.dp),
+                    title = "Historico completo",
+                    icon = Icons.Outlined.CalendarToday,
                 )
-                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
             }
             if (uiState.records.isEmpty()) {
                 item {
-                    Text(
-                        text = "Nenhum registro ainda.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ReportsEmptyState(
+                        modifier = Modifier.padding(horizontal = 18.dp),
                     )
                 }
             } else {
@@ -181,9 +210,9 @@ fun ReportsScreen(
                     key = { it.id },
                 ) { record ->
                     ReportRecordCard(
+                        modifier = Modifier.padding(horizontal = 18.dp),
                         record = record,
                         isExpanded = expandedRecordId == record.id,
-                        activeContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f),
                         onCardClick = {
                             expandedRecordId = if (expandedRecordId == record.id) null else record.id
                         },
@@ -195,11 +224,11 @@ fun ReportsScreen(
                                     if (expandedRecordId == record.id) {
                                         expandedRecordId = null
                                     }
-                                    snackbarHostState.showSnackbar("Registro excluído.")
+                                    snackbarHostState.showSnackbar("Registro excluido.")
                                 } else {
                                     snackbarHostState.showSnackbar(
                                         result.exceptionOrNull()?.message
-                                            ?: "Não foi possível excluir o registro.",
+                                            ?: "Nao foi possivel excluir o registro.",
                                     )
                                 }
                             }
@@ -213,9 +242,8 @@ fun ReportsScreen(
     val currentEditingRecord = editingRecord
     if (currentEditingRecord != null) {
         ModalBottomSheet(
-            onDismissRequest = {
-                editingRecord = null
-            },
+            containerColor = PureWhite,
+            onDismissRequest = { editingRecord = null },
         ) {
             Column(
                 modifier = Modifier
@@ -223,16 +251,70 @@ fun ReportsScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = "Editar registro",
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFEFF3FA),
+                        ) {
+                            Icon(
+                                modifier = Modifier.padding(8.dp),
+                                imageVector = Icons.AutoMirrored.Filled.Assignment,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                        Text(
+                            text = "Editar registro",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = PureWhite,
+                        ),
+                        onClick = {
+                            coroutineScope.launch {
+                                val saveResult = viewModel.updateRecord(
+                                    record = currentEditingRecord,
+                                    systolicInput = systolicInput,
+                                    diastolicInput = diastolicInput,
+                                    notes = notesInput,
+                                )
+                                if (saveResult.isSuccess) {
+                                    editingRecord = null
+                                    expandedRecordId = null
+                                    snackbarHostState.showSnackbar(
+                                        "Registro atualizado (${saveResult.getOrNull()?.label.orEmpty()}).",
+                                    )
+                                } else {
+                                    snackbarHostState.showSnackbar(
+                                        saveResult.exceptionOrNull()?.message
+                                            ?: "Nao foi possivel salvar o registro.",
+                                    )
+                                }
+                            }
+                        },
+                    ) {
+                        Text("Salvar")
+                    }
+                }
+
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         modifier = Modifier.weight(1f),
                         value = systolicInput,
                         onValueChange = { systolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Sistólica") },
+                        label = { Text("Sistolica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -240,49 +322,237 @@ fun ReportsScreen(
                         modifier = Modifier.weight(1f),
                         value = diastolicInput,
                         onValueChange = { diastolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Diastólica") },
+                        label = { Text("Diastolica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
                 }
+
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = notesInput,
                     onValueChange = { notesInput = it },
-                    label = { Text("Observação") },
+                    label = { Text("Observacao") },
                 )
-                TextButton(
-                    modifier = Modifier.align(Alignment.End),
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.secondary,
-                    ),
-                    onClick = {
-                        coroutineScope.launch {
-                            val saveResult = viewModel.updateRecord(
-                                record = currentEditingRecord,
-                                systolicInput = systolicInput,
-                                diastolicInput = diastolicInput,
-                                notes = notesInput,
-                            )
-                            if (saveResult.isSuccess) {
-                                editingRecord = null
-                                expandedRecordId = null
-                                snackbarHostState.showSnackbar(
-                                    "Registro atualizado (${saveResult.getOrNull()?.label.orEmpty()}).",
-                                )
-                            } else {
-                                snackbarHostState.showSnackbar(
-                                    saveResult.exceptionOrNull()?.message
-                                        ?: "Não foi possível salvar o registro.",
-                                )
-                            }
-                        }
-                    },
-                ) {
-                    Text("Salvar")
-                }
             }
         }
+    }
+}
+
+@Composable
+private fun ReportsHeroSection(metrics: ReportMetrics) {
+    val lastRecordLabel = metrics.lastRecordTimestamp?.let(::formatShortDate) ?: "--"
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(PureWhite),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "Resumo dos registros",
+                style = MaterialTheme.typography.labelLarge,
+                color = SecondaryBlueLight,
+                fontWeight = FontWeight.Medium,
+            )
+
+            if (metrics.totalRecords == 0) {
+                Text(
+                    text = "Quando voce adicionar registros na tela Principal, o resumo aparece aqui.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SecondaryBlueLight,
+                    textAlign = TextAlign.Center,
+                )
+            } else {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = metrics.averageSystolic?.toString() ?: "--",
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = SecondaryBlue,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                    Text(
+                        text = "/",
+                        style = MaterialTheme.typography.displayMedium,
+                        color = SecondaryBlueLight,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                    Text(
+                        text = metrics.averageDiastolic?.toString() ?: "--",
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "mmHg",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = SecondaryBlueLight,
+                        modifier = Modifier
+                            .alignByBaseline()
+                            .padding(bottom = 8.dp),
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                ReportMetricPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Registros",
+                    value = metrics.totalRecords.toString(),
+                )
+                ReportMetricPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Ultimo registro",
+                    value = lastRecordLabel,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                RiskCountPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Normal",
+                    count = metrics.goodCount,
+                    style = riskBadgeStyleFor(RiskLevel.GOOD),
+                )
+                RiskCountPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Alerta",
+                    count = metrics.warningCount,
+                    style = riskBadgeStyleFor(RiskLevel.WARNING),
+                )
+                RiskCountPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Risco",
+                    count = metrics.riskCount,
+                    style = riskBadgeStyleFor(RiskLevel.RISK),
+                )
+            }
+        }
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(),
+            thickness = 1.dp,
+            color = InactiveRecordBorderColor,
+        )
+    }
+}
+
+@Composable
+private fun ReportMetricPill(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = LightSectionBackground,
+        border = BorderStroke(1.dp, ReportCardBorderColor),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = SecondaryBlueLight,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RiskCountPill(
+    label: String,
+    count: Int,
+    style: RiskBadgeStyle,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = style.containerColor,
+        border = BorderStroke(1.dp, style.borderColor),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = style.icon,
+                contentDescription = null,
+                tint = style.contentColor,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(
+                text = "$label: $count",
+                style = MaterialTheme.typography.labelMedium,
+                color = style.contentColor,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReportsSectionHeader(
+    title: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Color(0xFFEFF3FA),
+        ) {
+            Icon(
+                modifier = Modifier.padding(8.dp),
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 
@@ -290,96 +560,135 @@ fun ReportsScreen(
 private fun ReportGenerationSection(
     isGenerating: Boolean,
     onGenerateReport: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val buttonContainerColor = if (isDarkTheme) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.secondary
-    }
-    val buttonContentColor = if (isDarkTheme) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSecondary
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant,
-        ),
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.outlinedCardColors(containerColor = PureWhite),
+        border = BorderStroke(1.dp, ReportCardBorderColor),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFEFF3FA),
+                ) {
+                    Icon(
+                        modifier = Modifier.padding(8.dp),
+                        imageVector = Icons.AutoMirrored.Filled.Assignment,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+                Text(
+                    text = "Relatorio em PDF",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
             Text(
-                text = "Relatório completo",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = "Gere um resumo completo para compartilhar com medicos ou salvar no celular.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = SecondaryBlueLight,
             )
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(50.dp),
                 onClick = onGenerateReport,
                 enabled = !isGenerating,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = buttonContainerColor,
-                    contentColor = buttonContentColor,
-                    disabledContainerColor = buttonContainerColor.copy(alpha = 0.5f),
-                    disabledContentColor = buttonContentColor.copy(alpha = 0.7f),
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = PureWhite,
+                    disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                    disabledContentColor = PureWhite.copy(alpha = 0.7f),
                 ),
             ) {
-                Text("Gerar relatório em PDF")
+                if (isGenerating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = PureWhite,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Gerando PDF...")
+                } else {
+                    Text("Gerar relatorio")
+                }
             }
         }
     }
 }
+
+@Composable
+private fun ReportsEmptyState(modifier: Modifier = Modifier) {
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.outlinedCardColors(containerColor = PureWhite),
+        border = BorderStroke(1.dp, ReportCardBorderColor),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = "Nenhum registro encontrado.",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Adicione registros na tela Principal para visualizar o historico aqui.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = SecondaryBlueLight,
+            )
+        }
+    }
+}
+
 @Composable
 private fun ReportRecordCard(
     record: BloodPressureRecord,
     isExpanded: Boolean,
-    activeContainerColor: Color,
     onCardClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val riskColor = when (record.riskLevel) {
-        RiskLevel.GOOD -> RiskGood
-        RiskLevel.WARNING -> RiskWarning
-        RiskLevel.RISK -> RiskHigh
+    val riskBadgeStyle = remember(record.systolic, record.diastolic) {
+        riskBadgeStyleFor(RiskLevel.fromPressure(record.systolic, record.diastolic))
     }
     val containerColor by animateColorAsState(
-        targetValue = if (isExpanded) activeContainerColor else Color.Transparent,
+        targetValue = if (isExpanded) Color(0xFFF6F9FF) else PureWhite,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "reportCardContainerColor",
     )
     val borderColor by animateColorAsState(
-        targetValue = if (isExpanded) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant,
+        targetValue = if (isExpanded) MaterialTheme.colorScheme.secondary else InactiveRecordBorderColor,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "reportCardBorderColor",
     )
-    val borderWidth: Dp = if (isExpanded) 1.5.dp else 1.dp
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-BR")) }
-    val dateText = dateFormatter.format(
-        Instant.ofEpochMilli(record.timestamp).atZone(ZoneId.systemDefault()),
-    )
+    val borderWidth: Dp = if (isExpanded) 1.6.dp else 1.dp
+    val dateText = remember(record.timestamp) { formatRecordDate(record.timestamp) }
 
     OutlinedCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
         onClick = onCardClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.outlinedCardColors(containerColor = containerColor),
         border = BorderStroke(width = borderWidth, color = borderColor),
     ) {
@@ -387,24 +696,87 @@ private fun ReportRecordCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = "$dateText - ${record.systolic}/${record.diastolic} mmHg",
-                style = MaterialTheme.typography.titleSmall,
-            )
-            Text(
-                text = "Classificação: ${record.riskLevel.label}",
-                color = riskColor,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            record.notes?.let { note ->
-                Text(
-                    text = "Obs: $note",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarToday,
+                            contentDescription = null,
+                            tint = SecondaryBlueLight,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Text(
+                            text = dateText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SecondaryBlueLight,
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(1.dp),
+                    ) {
+                        Text(
+                            text = record.systolic.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.alignByBaseline(),
+                        )
+                        Text(
+                            text = "/${record.diastolic}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = SecondaryBlueLight,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.alignByBaseline(),
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = "mmHg",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SecondaryBlueLight,
+                            modifier = Modifier
+                                .alignByBaseline()
+                                .padding(bottom = 2.dp),
+                        )
+                    }
+                }
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = riskBadgeStyle.containerColor,
+                    border = BorderStroke(1.dp, riskBadgeStyle.borderColor),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Icon(
+                            imageVector = riskBadgeStyle.icon,
+                            contentDescription = null,
+                            tint = riskBadgeStyle.contentColor,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Text(
+                            text = RiskLevel.fromPressure(record.systolic, record.diastolic).label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = riskBadgeStyle.contentColor,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
             }
+
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = fadeIn() + expandVertically(),
@@ -412,10 +784,19 @@ private fun ReportRecordCard(
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    record.notes?.takeIf { it.isNotBlank() }?.let { note ->
+                        Text(
+                            text = "Obs: $note",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
                         TextButton(
                             onClick = onEditClick,
                             colors = ButtonDefaults.textButtonColors(
@@ -447,4 +828,76 @@ private fun ReportRecordCard(
             }
         }
     }
+}
+
+private fun buildReportMetrics(records: List<BloodPressureRecord>): ReportMetrics {
+    if (records.isEmpty()) return ReportMetrics()
+
+    var goodCount = 0
+    var warningCount = 0
+    var riskCount = 0
+
+    records.forEach { record ->
+        when (RiskLevel.fromPressure(record.systolic, record.diastolic)) {
+            RiskLevel.GOOD -> goodCount += 1
+            RiskLevel.WARNING -> warningCount += 1
+            RiskLevel.RISK -> riskCount += 1
+        }
+    }
+
+    val totalRecords = records.size
+    return ReportMetrics(
+        totalRecords = totalRecords,
+        averageSystolic = records.sumOf { it.systolic } / totalRecords,
+        averageDiastolic = records.sumOf { it.diastolic } / totalRecords,
+        lastRecordTimestamp = records.maxOfOrNull { it.timestamp },
+        goodCount = goodCount,
+        warningCount = warningCount,
+        riskCount = riskCount,
+    )
+}
+
+private fun riskBadgeStyleFor(riskLevel: RiskLevel): RiskBadgeStyle {
+    return when (riskLevel) {
+        RiskLevel.GOOD -> RiskBadgeStyle(
+            icon = Icons.Outlined.CheckCircle,
+            containerColor = Color(0xFFEAF8EF),
+            borderColor = Color(0xFFC7E8D3),
+            contentColor = Color(0xFF1F7A46),
+        )
+        RiskLevel.WARNING -> RiskBadgeStyle(
+            icon = Icons.Outlined.ErrorOutline,
+            containerColor = Color(0xFFFFF6E8),
+            borderColor = Color(0xFFF8DFB3),
+            contentColor = Color(0xFFB26A00),
+        )
+        RiskLevel.RISK -> RiskBadgeStyle(
+            icon = Icons.Outlined.ErrorOutline,
+            containerColor = Color(0xFFFFEEEF),
+            borderColor = Color(0xFFF8C9CE),
+            contentColor = Color(0xFFB3262E),
+        )
+    }
+}
+
+private fun formatRecordDate(timestamp: Long): String {
+    val locale = Locale.forLanguageTag("pt-BR")
+    val zone = ZoneId.systemDefault()
+    val dateTime = Instant.ofEpochMilli(timestamp).atZone(zone).toLocalDateTime()
+    val date = dateTime.toLocalDate()
+    val today = LocalDate.now(zone)
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", locale)
+    val fullFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm", locale)
+
+    return when (date) {
+        today -> "Hoje, ${dateTime.format(timeFormatter)}"
+        today.minusDays(1) -> "Ontem, ${dateTime.format(timeFormatter)}"
+        else -> dateTime.format(fullFormatter)
+    }
+}
+
+private fun formatShortDate(timestamp: Long): String {
+    val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.forLanguageTag("pt-BR"))
+    return date.format(formatter)
 }

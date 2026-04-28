@@ -26,6 +26,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +61,7 @@ import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.ui.MonthCalendar
 import com.covildev.pulso.ui.theme.LightSectionBackground
 import com.covildev.pulso.ui.theme.PureWhite
+import com.covildev.pulso.ui.theme.SecondaryBlue
 import com.covildev.pulso.ui.theme.SecondaryBlueLight
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -253,6 +255,7 @@ fun GoalsScreen(
 
     if (showAlarmEditor) {
         ModalBottomSheet(
+            containerColor = PureWhite,
             onDismissRequest = {
                 showAlarmEditor = false
                 viewModel.restoreEditorFromSaved()
@@ -326,6 +329,10 @@ fun GoalsScreen(
                                 FilterChip(
                                     selected = day.value in uiState.editorSelectedDays,
                                     onClick = { viewModel.toggleDay(day.value) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = SecondaryBlue,
+                                        selectedLabelColor = PureWhite,
+                                    ),
                                     label = { Text(day.shortLabel) },
                                 )
                             }
@@ -391,6 +398,7 @@ fun GoalsScreen(
         val records = uiState.recordsByDay[selectedDayForRecords].orEmpty()
         AlertDialog(
             onDismissRequest = { selectedDayForRecords = -1 },
+            containerColor = LightSectionBackground,
             title = { Text("Registros no dia") },
             text = {
                 DayRecordsContent(records = records)
