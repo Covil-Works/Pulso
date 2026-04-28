@@ -69,7 +69,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -78,7 +77,6 @@ import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.domain.model.RiskLevel
 import com.covildev.pulso.ui.theme.LightSectionBackground
 import com.covildev.pulso.ui.theme.PureWhite
-import com.covildev.pulso.ui.theme.SecondaryBlue
 import com.covildev.pulso.ui.theme.SecondaryBlueLight
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -99,8 +97,6 @@ private data class RiskBadgeStyle(
 
 private data class ReportMetrics(
     val totalRecords: Int = 0,
-    val averageSystolic: Int? = null,
-    val averageDiastolic: Int? = null,
     val lastRecordTimestamp: Long? = null,
     val goodCount: Int = 0,
     val warningCount: Int = 0,
@@ -139,14 +135,14 @@ fun ReportsScreen(
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
             putExtra(Intent.EXTRA_STREAM, report.uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Relatorio de Pressao")
+            putExtra(Intent.EXTRA_SUBJECT, "Relatório de Pressão")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         runCatching {
             shareReportLauncher.launch(Intent.createChooser(shareIntent, "Compartilhar ou salvar PDF"))
         }.onFailure {
             viewModel.clearGeneratedReport()
-            snackbarHostState.showSnackbar("Nao foi possivel abrir o compartilhamento.")
+            snackbarHostState.showSnackbar("Não foi possível abrir o compartilhamento.")
         }
     }
 
@@ -162,7 +158,7 @@ fun ReportsScreen(
         containerColor = LightSectionBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Relatorios") },
+                title = { Text("Relatórios") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -194,7 +190,7 @@ fun ReportsScreen(
             item {
                 ReportsSectionHeader(
                     modifier = Modifier.padding(horizontal = 18.dp),
-                    title = "Historico completo",
+                    title = "Histórico completo",
                     icon = Icons.Outlined.CalendarToday,
                 )
             }
@@ -224,11 +220,11 @@ fun ReportsScreen(
                                     if (expandedRecordId == record.id) {
                                         expandedRecordId = null
                                     }
-                                    snackbarHostState.showSnackbar("Registro excluido.")
+                                    snackbarHostState.showSnackbar("Registro excluído.")
                                 } else {
                                     snackbarHostState.showSnackbar(
                                         result.exceptionOrNull()?.message
-                                            ?: "Nao foi possivel excluir o registro.",
+                                            ?: "Não foi possível excluir o registro.",
                                     )
                                 }
                             }
@@ -299,7 +295,7 @@ fun ReportsScreen(
                                 } else {
                                     snackbarHostState.showSnackbar(
                                         saveResult.exceptionOrNull()?.message
-                                            ?: "Nao foi possivel salvar o registro.",
+                                            ?: "Não foi possível salvar o registro.",
                                     )
                                 }
                             }
@@ -314,7 +310,7 @@ fun ReportsScreen(
                         modifier = Modifier.weight(1f),
                         value = systolicInput,
                         onValueChange = { systolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Sistolica") },
+                        label = { Text("Sistólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -322,7 +318,7 @@ fun ReportsScreen(
                         modifier = Modifier.weight(1f),
                         value = diastolicInput,
                         onValueChange = { diastolicInput = it.filter(Char::isDigit) },
-                        label = { Text("Diastolica") },
+                        label = { Text("Diastólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
@@ -332,7 +328,7 @@ fun ReportsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     value = notesInput,
                     onValueChange = { notesInput = it },
-                    label = { Text("Observacao") },
+                    label = { Text("Observação") },
                 )
             }
         }
@@ -353,57 +349,19 @@ private fun ReportsHeroSection(metrics: ReportMetrics) {
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 22.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.Start,
         ) {
-            Text(
-                text = "Resumo dos registros",
-                style = MaterialTheme.typography.labelLarge,
-                color = SecondaryBlueLight,
-                fontWeight = FontWeight.Medium,
+            ReportsSectionHeader(
+                title = "Resumo dos Registros",
+                icon = Icons.Outlined.CheckCircle,
             )
 
             if (metrics.totalRecords == 0) {
                 Text(
-                    text = "Quando voce adicionar registros na tela Principal, o resumo aparece aqui.",
+                    text = "Quando você adicionar registros na tela Principal, o resumo aparece aqui.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = SecondaryBlueLight,
-                    textAlign = TextAlign.Center,
                 )
-            } else {
-                Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Text(
-                        text = metrics.averageSystolic?.toString() ?: "--",
-                        style = MaterialTheme.typography.displayLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = SecondaryBlue,
-                        modifier = Modifier.alignByBaseline(),
-                    )
-                    Text(
-                        text = "/",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = SecondaryBlueLight,
-                        modifier = Modifier.alignByBaseline(),
-                    )
-                    Text(
-                        text = metrics.averageDiastolic?.toString() ?: "--",
-                        style = MaterialTheme.typography.displayLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.alignByBaseline(),
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "mmHg",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = SecondaryBlueLight,
-                        modifier = Modifier
-                            .alignByBaseline()
-                            .padding(bottom = 8.dp),
-                    )
-                }
             }
 
             Row(
@@ -417,7 +375,7 @@ private fun ReportsHeroSection(metrics: ReportMetrics) {
                 )
                 ReportMetricPill(
                     modifier = Modifier.weight(1f),
-                    label = "Ultimo registro",
+                    label = "Último registro",
                     value = lastRecordLabel,
                 )
             }
@@ -590,13 +548,13 @@ private fun ReportGenerationSection(
                     )
                 }
                 Text(
-                    text = "Relatorio em PDF",
+                    text = "Relatório em PDF",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
             Text(
-                text = "Gere um resumo completo para compartilhar com medicos ou salvar no celular.",
+                text = "Gere um resumo completo para compartilhar com médicos ou salvar no celular.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = SecondaryBlueLight,
             )
@@ -623,7 +581,7 @@ private fun ReportGenerationSection(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Gerando PDF...")
                 } else {
-                    Text("Gerar relatorio")
+                    Text("Gerar relatório")
                 }
             }
         }
@@ -650,7 +608,7 @@ private fun ReportsEmptyState(modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Adicione registros na tela Principal para visualizar o historico aqui.",
+                text = "Adicione registros na tela Principal para visualizar o histórico aqui.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = SecondaryBlueLight,
             )
@@ -848,8 +806,6 @@ private fun buildReportMetrics(records: List<BloodPressureRecord>): ReportMetric
     val totalRecords = records.size
     return ReportMetrics(
         totalRecords = totalRecords,
-        averageSystolic = records.sumOf { it.systolic } / totalRecords,
-        averageDiastolic = records.sumOf { it.diastolic } / totalRecords,
         lastRecordTimestamp = records.maxOfOrNull { it.timestamp },
         goodCount = goodCount,
         warningCount = warningCount,
