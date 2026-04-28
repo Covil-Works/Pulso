@@ -1,6 +1,8 @@
 package com.covildev.pulso.feature_metas.ui
 
 import android.app.TimePickerDialog
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,19 +10,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAlarm
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Alarm
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -28,6 +33,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -42,12 +48,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.ui.MonthCalendar
+import com.covildev.pulso.ui.theme.LightSectionBackground
+import com.covildev.pulso.ui.theme.PureWhite
+import com.covildev.pulso.ui.theme.SecondaryBlueLight
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalTime
@@ -72,6 +84,7 @@ fun GoalsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = LightSectionBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Metas") },
@@ -88,16 +101,16 @@ fun GoalsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
+                .padding(innerPadding)
+                .background(LightSectionBackground),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                Text(
-                    text = "Definir alarmes",
-                    style = MaterialTheme.typography.titleMedium,
+                GoalsSectionHeader(
+                    title = "Definir alarmes",
+                    icon = Icons.Outlined.Alarm,
                 )
-                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
             }
             item {
                 OutlinedCard(
@@ -105,9 +118,11 @@ fun GoalsScreen(
                         viewModel.startEditingGoals()
                         showAlarmEditor = true
                     },
+                    shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.outlinedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        containerColor = PureWhite,
                     ),
+                    border = BorderStroke(1.dp, Color(0xFFE6EAF2)),
                 ) {
                     Column(
                         modifier = Modifier
@@ -116,42 +131,82 @@ fun GoalsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "Dias: ${formatSelectedDays(uiState.previewSelectedDays)}",
-                            style = MaterialTheme.typography.bodyLarge,
+                            text = "Lembretes configurados",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = "Horários: ${formatSelectedTimes(uiState.previewSelectedTimes, timeFormatter)}",
+                            text = "Dias: ${formatSelectedDays(uiState.previewSelectedDays)}",
                             style = MaterialTheme.typography.bodyLarge,
+                            color = SecondaryBlueLight,
                         )
+                        Text(
+                            text = "Horarios: ${formatSelectedTimes(uiState.previewSelectedTimes, timeFormatter)}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = SecondaryBlueLight,
+                        )
+                        Surface(
+                            color = Color(0xFFF1F4FA),
+                            shape = RoundedCornerShape(999.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E7F2)),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AddAlarm,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                )
+                                Text(
+                                    text = "Toque para editar os alarmes",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
                     }
                 }
             }
             item {
-                Text(
-                    text = "Registro do mês",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
-            }
-            item {
-                MonthCalendar(
-                    month = uiState.selectedMonth,
-                    highlightedDays = uiState.highlightedDays,
-                    onPreviousMonth = viewModel::goToPreviousMonth,
-                    onNextMonth = viewModel::goToNextMonth,
-                    canGoNextMonth = uiState.selectedMonth < YearMonth.now(),
-                    onDayClick = { day ->
-                        if (!uiState.recordsByDay[day].isNullOrEmpty()) {
-                            selectedDayForRecords = day
-                        }
-                    },
+                GoalsSectionHeader(
+                    title = "Registro do mes",
+                    icon = Icons.Outlined.CalendarToday,
                 )
             }
             item {
                 OutlinedCard(
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.outlinedCardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        containerColor = PureWhite,
                     ),
+                    border = BorderStroke(1.dp, Color(0xFFE6EAF2)),
+                ) {
+                    MonthCalendar(
+                        modifier = Modifier.fillMaxWidth(),
+                        month = uiState.selectedMonth,
+                        highlightedDays = uiState.highlightedDays,
+                        onPreviousMonth = viewModel::goToPreviousMonth,
+                        onNextMonth = viewModel::goToNextMonth,
+                        canGoNextMonth = uiState.selectedMonth < YearMonth.now(),
+                        onDayClick = { day ->
+                            if (!uiState.recordsByDay[day].isNullOrEmpty()) {
+                                selectedDayForRecords = day
+                            }
+                        },
+                    )
+                }
+            }
+            item {
+                OutlinedCard(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = PureWhite,
+                    ),
+                    border = BorderStroke(1.dp, Color(0xFFE6EAF2)),
                 ) {
                     Column(
                         modifier = Modifier
@@ -161,11 +216,13 @@ fun GoalsScreen(
                         Text(
                             text = "Progresso de metas",
                             style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
                         )
                         Text(
                             modifier = Modifier.padding(top = 8.dp),
                             text = uiState.progressMessage,
                             style = MaterialTheme.typography.bodyLarge,
+                            color = SecondaryBlueLight,
                         )
                     }
                 }
@@ -186,10 +243,57 @@ fun GoalsScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = "Definir alarmes",
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFEFF3FA),
+                        ) {
+                            Icon(
+                                modifier = Modifier.padding(8.dp),
+                                imageVector = Icons.Default.AddAlarm,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                        Text(
+                            text = "Definir alarmes",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = Color.White,
+                        ),
+                        onClick = {
+                            coroutineScope.launch {
+                                val result = viewModel.saveGoals()
+                                if (result.isSuccess) {
+                                    showAlarmEditor = false
+                                    snackbarHostState.showSnackbar(
+                                        "Metas salvas. Lembretes locais atualizados.",
+                                    )
+                                } else {
+                                    snackbarHostState.showSnackbar(
+                                        result.exceptionOrNull()?.message
+                                            ?: "Nao foi possivel salvar as metas.",
+                                    )
+                                }
+                            }
+                        },
+                    ) {
+                        Text("Salvar")
+                    }
+                }
                 Text(
                     text = "Dias da semana",
                     style = MaterialTheme.typography.titleSmall,
@@ -209,12 +313,12 @@ fun GoalsScreen(
                 }
 
                 Text(
-                    text = "Horários",
+                    text = "Horarios",
                     style = MaterialTheme.typography.titleSmall,
                 )
                 if (uiState.editorSelectedTimes.isEmpty()) {
                     Text(
-                        text = "Nenhum horário definido.",
+                        text = "Nenhum horario definido.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -228,7 +332,7 @@ fun GoalsScreen(
                                         trailingIcon = {
                                             Icon(
                                                 imageVector = Icons.Default.Close,
-                                                contentDescription = "Remover horário",
+                                                contentDescription = "Remover horario",
                                             )
                                         },
                                     )
@@ -256,31 +360,7 @@ fun GoalsScreen(
                     },
                 ) {
                     Icon(Icons.Default.AddAlarm, contentDescription = null)
-                    Text(" Adicionar horário")
-                }
-                TextButton(
-                    modifier = Modifier.align(Alignment.End),
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.secondary,
-                    ),
-                    onClick = {
-                        coroutineScope.launch {
-                            val result = viewModel.saveGoals()
-                            if (result.isSuccess) {
-                                showAlarmEditor = false
-                                snackbarHostState.showSnackbar(
-                                    "Metas salvas. Lembretes locais atualizados.",
-                                )
-                            } else {
-                                snackbarHostState.showSnackbar(
-                                    result.exceptionOrNull()?.message
-                                        ?: "Não foi possível salvar as metas.",
-                                )
-                            }
-                        }
-                    },
-                ) {
-                    Text("Salvar metas")
+                    Text(" Adicionar horario")
                 }
             }
         }
@@ -309,6 +389,37 @@ fun GoalsScreen(
 }
 
 @Composable
+private fun GoalsSectionHeader(
+    title: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Color(0xFFEFF3FA),
+        ) {
+            Icon(
+                modifier = Modifier.padding(8.dp),
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
 private fun DayRecordsContent(records: List<BloodPressureRecord>) {
     val hourFormatter = remember {
         DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("pt-BR"))
@@ -321,7 +432,7 @@ private fun DayRecordsContent(records: List<BloodPressureRecord>) {
     ) {
         if (records.isEmpty()) {
             Text(
-                text = "Não há registros neste dia.",
+                text = "Nao ha registros neste dia.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return@Column
@@ -343,13 +454,13 @@ private fun DayRecordsContent(records: List<BloodPressureRecord>) {
                         style = MaterialTheme.typography.titleSmall,
                     )
                     Text(
-                        text = "Horário: $hour",
+                        text = "Horario: $hour",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     record.notes?.takeIf { it.isNotBlank() }?.let { note ->
                         Text(
-                            text = "Observação: $note",
+                            text = "Observacao: $note",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -368,11 +479,11 @@ private data class DayOption(
 
 private val DAY_OPTIONS = listOf(
     DayOption(1, "Seg", "Segunda"),
-    DayOption(2, "Ter", "Terça"),
+    DayOption(2, "Ter", "Terca"),
     DayOption(3, "Qua", "Quarta"),
     DayOption(4, "Qui", "Quinta"),
     DayOption(5, "Sex", "Sexta"),
-    DayOption(6, "Sab", "Sábado"),
+    DayOption(6, "Sab", "Sabado"),
     DayOption(7, "Dom", "Domingo"),
 )
 
@@ -397,6 +508,6 @@ private fun formatSelectedTimes(
     times: List<LocalTime>,
     formatter: DateTimeFormatter,
 ): String {
-    if (times.isEmpty()) return "Nenhum horário definido"
+    if (times.isEmpty()) return "Nenhum horario definido"
     return times.joinToString(", ") { formatter.format(it) }
 }
