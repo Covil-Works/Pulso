@@ -1,32 +1,60 @@
 package com.covildev.pulso.feature_registro.domain.usecase
 
+data class BloodPressureValidationErrors(
+    val systolicError: String? = null,
+    val diastolicError: String? = null,
+) {
+    val hasErrors: Boolean
+        get() = systolicError != null || diastolicError != null
+}
+
 object BloodPressureInputValidator {
-    private const val MIN_SYSTOLIC = 60
-    private const val MAX_SYSTOLIC = 280
-    private const val MIN_DIASTOLIC = 30
-    private const val MAX_DIASTOLIC = 180
-    private const val MIN_PULSE_PRESSURE = 10
+    const val MIN_PRESSURE = 0
+    const val MAX_PRESSURE = 300
+
+    private const val LOW_SYSTOLIC_SUSPECT = 70
+    private const val HIGH_SYSTOLIC_SUSPECT = 250
+    private const val LOW_DIASTOLIC_SUSPECT = 40
+    private const val HIGH_DIASTOLIC_SUSPECT = 150
+    private const val MIN_PULSE_PRESSURE_SUSPECT = 10
+    private const val MAX_PULSE_PRESSURE_SUSPECT = 140
 
     fun validate(
         systolic: Int,
         diastolic: Int,
-    ): String? {
-        if (systolic !in MIN_SYSTOLIC..MAX_SYSTOLIC) {
-            return "Sistólica fora da faixa esperada ($MIN_SYSTOLIC-$MAX_SYSTOLIC mmHg)."
+    ): BloodPressureValidationErrors {
+        val systolicError = if (systolic !in MIN_PRESSURE..MAX_PRESSURE) {
+            "A pressao sistolica deve estar entre $MIN_PRESSURE e $MAX_PRESSURE."
+        } else {
+            null
         }
 
-        if (diastolic !in MIN_DIASTOLIC..MAX_DIASTOLIC) {
-            return "Diastólica fora da faixa esperada ($MIN_DIASTOLIC-$MAX_DIASTOLIC mmHg)."
+        val diastolicError = when {
+            diastolic !in MIN_PRESSURE..MAX_PRESSURE ->
+                "A pressao diastolica deve estar entre $MIN_PRESSURE e $MAX_PRESSURE."
+            diastolic > systolic ->
+                "A pressao diastolica nao pode ser maior que a sistolica."
+            else -> null
         }
 
-        if (systolic <= diastolic) {
-            return "A sistólica deve ser maior que a diastólica."
-        }
+        return BloodPressureValidationErrors(
+            systolicError = systolicError,
+            diastolicError = diastolicError,
+        )
+    }
 
-        if ((systolic - diastolic) < MIN_PULSE_PRESSURE) {
-            return "A diferença entre sistólica e diastólica parece inválida."
-        }
+    fun isUnusualButAllowed(
+        systolic: Int,
+        diastolic: Int,
+    ): Boolean {
+        if (validate(systolic, diastolic).hasErrors) return false
 
-        return null
+        val pulsePressure = systolic - diastolic
+        return systolic < LOW_SYSTOLIC_SUSPECT ||
+            systolic > HIGH_SYSTOLIC_SUSPECT ||
+            diastolic < LOW_DIASTOLIC_SUSPECT ||
+            diastolic > HIGH_DIASTOLIC_SUSPECT ||
+            pulsePressure < MIN_PULSE_PRESSURE_SUSPECT ||
+            pulsePressure > MAX_PULSE_PRESSURE_SUSPECT
     }
 }

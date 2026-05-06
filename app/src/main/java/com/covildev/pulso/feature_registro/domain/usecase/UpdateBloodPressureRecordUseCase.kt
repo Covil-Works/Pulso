@@ -18,8 +18,14 @@ class UpdateBloodPressureRecordUseCase @Inject constructor(
             systolic = systolic,
             diastolic = diastolic,
         )
-        if (validationError != null) {
-            return Result.failure(IllegalArgumentException(validationError))
+        if (validationError.hasErrors) {
+            return Result.failure(
+                IllegalArgumentException(
+                    validationError.systolicError
+                        ?: validationError.diastolicError
+                        ?: "Nao foi possivel validar os campos de pressao.",
+                ),
+            )
         }
 
         val updatedRecord = record.copy(

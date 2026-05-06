@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
@@ -75,6 +76,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.domain.model.RiskLevel
+import com.covildev.pulso.feature_registro.domain.usecase.BloodPressureInputValidator
+import com.covildev.pulso.feature_registro.domain.usecase.BloodPressureValidationErrors
 import com.covildev.pulso.ui.theme.LightSectionBackground
 import com.covildev.pulso.ui.theme.PureWhite
 import com.covildev.pulso.ui.theme.SecondaryBlueLight
@@ -103,6 +106,15 @@ private data class ReportMetrics(
     val riskCount: Int = 0,
 )
 
+private data class ParsedPressureForm(
+    val systolic: Int? = null,
+    val diastolic: Int? = null,
+    val errors: BloodPressureValidationErrors = BloodPressureValidationErrors(),
+) {
+    val isValid: Boolean
+        get() = systolic != null && diastolic != null && !errors.hasErrors
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(
@@ -116,7 +128,10 @@ fun ReportsScreen(
     var editingRecord by remember { mutableStateOf<BloodPressureRecord?>(null) }
     var systolicInput by rememberSaveable { mutableStateOf("") }
     var diastolicInput by rememberSaveable { mutableStateOf("") }
+    var systolicError by rememberSaveable { mutableStateOf<String?>(null) }
+    var diastolicError by rememberSaveable { mutableStateOf<String?>(null) }
     var notesInput by rememberSaveable { mutableStateOf("") }
+    var pendingUnusualSave by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val reportMetrics = remember(uiState.records) { buildReportMetrics(uiState.records) }
     val shareReportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -149,8 +164,63 @@ fun ReportsScreen(
     fun openEditRecordSheet(record: BloodPressureRecord) {
         systolicInput = record.systolic.toString()
         diastolicInput = record.diastolic.toString()
+        systolicError = null
+        diastolicError = null
         notesInput = record.notes.orEmpty()
+        pendingUnusualSave = null
         editingRecord = record
+    }
+
+    fun parseAndValidatePressureInputs(): ParsedPressureForm {
+        val systolic = systolicInput.toIntOrNull()
+        val diastolic = diastolicInput.toIntOrNull()
+
+        val requiredErrors = BloodPressureValidationErrors(
+            systolicError = if (systolic == null) "Informe a pressao sistolica." else null,
+            diastolicError = if (diastolic == null) "Informe a pressao diastolica." else null,
+        )
+        if (requiredErrors.hasErrors) {
+            return ParsedPressureForm(
+                systolic = systolic,
+                diastolic = diastolic,
+                errors = requiredErrors,
+            )
+        }
+
+        return ParsedPressureForm(
+            systolic = systolic,
+            diastolic = diastolic,
+            errors = BloodPressureInputValidator.validate(
+                systolic = systolic!!,
+                diastolic = diastolic!!,
+            ),
+        )
+    }
+
+    suspend fun persistRecordUpdate(
+        record: BloodPressureRecord,
+        systolic: Int,
+        diastolic: Int,
+    ) {
+        val saveResult = viewModel.updateRecord(
+            record = record,
+            systolic = systolic,
+            diastolic = diastolic,
+            notes = notesInput,
+        )
+        if (saveResult.isSuccess) {
+            editingRecord = null
+            expandedRecordId = null
+            pendingUnusualSave = null
+            snackbarHostState.showSnackbar(
+                "Registro atualizado (${saveResult.getOrNull()?.label.orEmpty()}).",
+            )
+        } else {
+            snackbarHostState.showSnackbar(
+                saveResult.exceptionOrNull()?.message
+                    ?: "Nao foi possivel salvar o registro.",
+            )
+        }
     }
 
     Scaffold(
@@ -239,7 +309,10 @@ fun ReportsScreen(
     if (currentEditingRecord != null) {
         ModalBottomSheet(
             containerColor = PureWhite,
-            onDismissRequest = { editingRecord = null },
+            onDismissRequest = {
+                pendingUnusualSave = null
+                editingRecord = null
+            },
         ) {
             Column(
                 modifier = Modifier
@@ -280,10 +353,29 @@ fun ReportsScreen(
                         ),
                         onClick = {
                             coroutineScope.launch {
+                                val parsedForm = parseAndValidatePressureInputs()
+                                systolicError = parsedForm.errors.systolicError
+                                diastolicError = parsedForm.errors.diastolicError
+                                if (!parsedForm.isValid) return@launch
+
+                                val systolic = parsedForm.systolic!!
+                                val diastolic = parsedForm.diastolic!!
+                                if (BloodPressureInputValidator.isUnusualButAllowed(systolic, diastolic)) {
+                                    pendingUnusualSave = systolic to diastolic
+                                    return@launch
+                                }
+
+                                persistRecordUpdate(
+                                    record = currentEditingRecord,
+                                    systolic = systolic,
+                                    diastolic = diastolic,
+                                )
+                                return@launch
+
                                 val saveResult = viewModel.updateRecord(
                                     record = currentEditingRecord,
-                                    systolicInput = systolicInput,
-                                    diastolicInput = diastolicInput,
+                                    systolic = systolicInput.toIntOrNull() ?: -1,
+                                    diastolic = diastolicInput.toIntOrNull() ?: -1,
                                     notes = notesInput,
                                 )
                                 if (saveResult.isSuccess) {
@@ -309,18 +401,38 @@ fun ReportsScreen(
                     OutlinedTextField(
                         modifier = Modifier.weight(1f),
                         value = systolicInput,
-                        onValueChange = { systolicInput = it.filter(Char::isDigit) },
+                        onValueChange = {
+                            systolicInput = it.filter(Char::isDigit)
+                            systolicError = null
+                            diastolicError = null
+                        },
+                        isError = systolicError != null,
                         label = { Text("Sistólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
+                        supportingText = {
+                            systolicError?.let {
+                                Text(it)
+                            }
+                        },
                     )
                     OutlinedTextField(
                         modifier = Modifier.weight(1f),
                         value = diastolicInput,
-                        onValueChange = { diastolicInput = it.filter(Char::isDigit) },
+                        onValueChange = {
+                            diastolicInput = it.filter(Char::isDigit)
+                            systolicError = null
+                            diastolicError = null
+                        },
+                        isError = diastolicError != null,
                         label = { Text("Diastólica") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
+                        supportingText = {
+                            diastolicError?.let {
+                                Text(it)
+                            }
+                        },
                     )
                 }
 
@@ -332,6 +444,53 @@ fun ReportsScreen(
                 )
             }
         }
+    }
+
+    val unusualSave = pendingUnusualSave
+    if (currentEditingRecord != null && unusualSave != null) {
+        AlertDialog(
+            onDismissRequest = { pendingUnusualSave = null },
+            title = { Text("Confirmar valores") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Tem certeza que sua pressão é essa?")
+                    Text(
+                        text = "${unusualSave.first}/${unusualSave.second}mmHg",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = PureWhite,
+                    ),
+                    onClick = {
+                        coroutineScope.launch {
+                            persistRecordUpdate(
+                                record = currentEditingRecord,
+                                systolic = unusualSave.first,
+                                diastolic = unusualSave.second,
+                            )
+                        }
+                    },
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        pendingUnusualSave = null
+                    },
+                ) {
+                    Text("Corrigir")
+                }
+            },
+        )
     }
 }
 
@@ -398,7 +557,7 @@ private fun ReportsHeroSection(metrics: ReportMetrics) {
                 )
                 RiskCountPill(
                     modifier = Modifier.weight(1f),
-                    label = "Risco",
+                    label = "Elevada",
                     count = metrics.riskCount,
                     style = riskBadgeStyleFor(RiskLevel.RISK),
                 )

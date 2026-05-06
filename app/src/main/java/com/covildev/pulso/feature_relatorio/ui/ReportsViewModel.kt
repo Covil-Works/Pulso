@@ -89,15 +89,10 @@ class ReportsViewModel @Inject constructor(
 
     suspend fun updateRecord(
         record: BloodPressureRecord,
-        systolicInput: String,
-        diastolicInput: String,
+        systolic: Int,
+        diastolic: Int,
         notes: String?,
     ): Result<RiskLevel> {
-        val systolic = systolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressão sistólica."))
-        val diastolic = diastolicInput.toIntOrNull()
-            ?: return Result.failure(IllegalArgumentException("Informe a pressão diastólica."))
-
         return updateBloodPressureRecordUseCase(
             record = record,
             systolic = systolic,
