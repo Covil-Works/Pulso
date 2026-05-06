@@ -392,54 +392,75 @@ fun GoalsScreen(
                     text = "Horarios",
                     style = MaterialTheme.typography.titleSmall,
                 )
+                val openTimePicker = {
+                    val now = LocalTime.now()
+                    TimePickerDialog(
+                        context,
+                        { _, hour, minute ->
+                            viewModel.addTime(LocalTime.of(hour, minute))
+                        },
+                        now.hour,
+                        now.minute,
+                        true,
+                    ).show()
+                }
                 if (uiState.editorSelectedTimes.isEmpty()) {
                     Text(
                         text = "Nenhum horario definido.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                            contentColor = MaterialTheme.colorScheme.secondary,
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f)),
+                        onClick = openTimePicker,
+                    ) {
+                        Icon(Icons.Default.AddAlarm, contentDescription = null)
+                        Text(" Adicionar horario", fontWeight = FontWeight.SemiBold)
+                    }
                 } else {
+                    val rowItems = (uiState.editorSelectedTimes.map<LocalTime, LocalTime?> { it } + listOf(null)).chunked(3)
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        uiState.editorSelectedTimes.chunked(3).forEach { rowTimes ->
+                        rowItems.forEach { row ->
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                rowTimes.forEach { time ->
-                                    AssistChip(
-                                        onClick = { viewModel.removeTime(time) },
-                                        label = { Text(timeFormatter.format(time)) },
-                                        trailingIcon = {
+                                row.forEach { time ->
+                                    if (time == null) {
+                                        Button(
+                                            onClick = openTimePicker,
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                                                contentColor = MaterialTheme.colorScheme.secondary,
+                                            ),
+                                            border = BorderStroke(
+                                                1.dp,
+                                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f),
+                                            ),
+                                            contentPadding = PaddingValues(10.dp),
+                                        ) {
                                             Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "Remover horario",
+                                                imageVector = Icons.Default.AddAlarm,
+                                                contentDescription = "Adicionar horario",
                                             )
-                                        },
-                                    )
+                                        }
+                                    } else {
+                                        AssistChip(
+                                            onClick = { viewModel.removeTime(time) },
+                                            label = { Text(timeFormatter.format(time)) },
+                                            trailingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = "Remover horario",
+                                                )
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
-
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
-                        contentColor = MaterialTheme.colorScheme.secondary,
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f)),
-                    onClick = {
-                        val now = LocalTime.now()
-                        TimePickerDialog(
-                            context,
-                            { _, hour, minute ->
-                                viewModel.addTime(LocalTime.of(hour, minute))
-                            },
-                            now.hour,
-                            now.minute,
-                            true,
-                        ).show()
-                    },
-                ) {
-                    Icon(Icons.Default.AddAlarm, contentDescription = null)
-                    Text(" Adicionar horario", fontWeight = FontWeight.SemiBold)
                 }
 
                 Text(
