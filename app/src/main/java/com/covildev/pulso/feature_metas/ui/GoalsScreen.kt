@@ -169,13 +169,6 @@ fun GoalsScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = SecondaryBlueLight,
                         )
-                        uiState.previewObservation?.let { observation ->
-                            Text(
-                                text = "Observacao: $observation",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = SecondaryBlueLight,
-                            )
-                        }
                         Surface(
                             color = Color(0xFFF1F4FA),
                             shape = RoundedCornerShape(999.dp),
