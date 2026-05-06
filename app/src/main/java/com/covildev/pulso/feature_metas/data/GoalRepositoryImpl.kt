@@ -30,6 +30,7 @@ private fun GoalEntity.toDomain(): GoalSettings {
             }
             .distinct()
             .sorted(),
+        alarmNote = alarmNote.ifBlank { null },
     )
 }
 
@@ -37,5 +38,6 @@ private fun GoalSettings.toEntity(): GoalEntity {
     return GoalEntity(
         daysOfWeek = daysOfWeek.filter { it in 1..7 }.sorted(),
         timesOfDay = timesOfDay.distinct().sorted().map { it.toString() },
+        alarmNote = alarmNote.orEmpty().trim(),
     )
 }

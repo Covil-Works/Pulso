@@ -14,6 +14,7 @@ class SaveGoalsUseCase @Inject constructor(
         val sanitizedGoals = GoalSettings(
             daysOfWeek = goals.daysOfWeek.filter { it in 1..7 }.toSet(),
             timesOfDay = goals.timesOfDay.distinct().sorted(),
+            alarmNote = goals.alarmNote?.trim()?.takeIf { it.isNotBlank() },
         )
 
         if (sanitizedGoals.daysOfWeek.isEmpty()) {

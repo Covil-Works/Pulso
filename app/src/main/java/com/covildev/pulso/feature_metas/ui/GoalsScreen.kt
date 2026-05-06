@@ -1,19 +1,27 @@
 package com.covildev.pulso.feature_metas.ui
 
 import android.app.TimePickerDialog
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAlarm
 import androidx.compose.material.icons.filled.Close
@@ -32,6 +40,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -53,12 +62,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.covildev.pulso.feature_registro.domain.model.BloodPressureRecord
 import com.covildev.pulso.feature_registro.ui.MonthCalendar
+import com.covildev.pulso.feature_alarm.permission.AlarmPermissionManager
+import com.covildev.pulso.feature_alarm.permission.AlarmPermissionStatus
 import com.covildev.pulso.ui.theme.LightSectionBackground
 import com.covildev.pulso.ui.theme.PureWhite
 import com.covildev.pulso.ui.theme.SecondaryBlue
@@ -71,7 +91,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun GoalsScreen(
     modifier: Modifier = Modifier,
@@ -84,6 +104,7 @@ fun GoalsScreen(
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("pt-BR")) }
     var showAlarmEditor by rememberSaveable { mutableStateOf(false) }
     var selectedDayForRecords by rememberSaveable { mutableIntStateOf(-1) }
+    var missingPermissionState by remember { mutableStateOf<AlarmPermissionStatus?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -148,6 +169,13 @@ fun GoalsScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = SecondaryBlueLight,
                         )
+                        uiState.previewObservation?.let { observation ->
+                            Text(
+                                text = "Observacao: $observation",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = SecondaryBlueLight,
+                            )
+                        }
                         Surface(
                             color = Color(0xFFF1F4FA),
                             shape = RoundedCornerShape(999.dp),
@@ -254,8 +282,17 @@ fun GoalsScreen(
     }
 
     if (showAlarmEditor) {
+        val sheetScrollState = rememberScrollState()
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
+        val bringIntoViewRequester = remember { BringIntoViewRequester() }
+        val configuration = LocalConfiguration.current
+        var observationInput by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+            mutableStateOf(TextFieldValue(uiState.editorObservation))
+        }
         ModalBottomSheet(
             containerColor = PureWhite,
+            contentWindowInsets = { WindowInsets(0) },
             onDismissRequest = {
                 showAlarmEditor = false
                 viewModel.restoreEditorFromSaved()
@@ -263,6 +300,10 @@ fun GoalsScreen(
         ) {
             Column(
                 modifier = Modifier
+                    .heightIn(max = configuration.screenHeightDp.dp * 0.92f)
+                    .verticalScroll(sheetScrollState)
+                    .imePadding()
+                    .navigationBarsPadding()
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -300,6 +341,13 @@ fun GoalsScreen(
                         ),
                         onClick = {
                             coroutineScope.launch {
+                                // Guarantees latest typed value is in form state, even without pressing "Done".
+                                viewModel.updateObservation(observationInput.text)
+                                val permissions = AlarmPermissionManager.getStatus(context)
+                                if (!permissions.allGranted) {
+                                    missingPermissionState = permissions
+                                    return@launch
+                                }
                                 val result = viewModel.saveGoals()
                                 if (result.isSuccess) {
                                     showAlarmEditor = false
@@ -370,10 +418,13 @@ fun GoalsScreen(
                     }
                 }
 
-                TextButton(
-                    colors = ButtonDefaults.textButtonColors(
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
                         contentColor = MaterialTheme.colorScheme.secondary,
                     ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f)),
                     onClick = {
                         val now = LocalTime.now()
                         TimePickerDialog(
@@ -388,10 +439,93 @@ fun GoalsScreen(
                     },
                 ) {
                     Icon(Icons.Default.AddAlarm, contentDescription = null)
-                    Text(" Adicionar horario")
+                    Text(" Adicionar horario", fontWeight = FontWeight.SemiBold)
                 }
+
+                Text(
+                    text = "Observacao (opcional)",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bringIntoViewRequester(bringIntoViewRequester)
+                        .onFocusEvent { state ->
+                            if (state.isFocused) {
+                                coroutineScope.launch {
+                                    bringIntoViewRequester.bringIntoView()
+                                }
+                            }
+                        },
+                    value = observationInput,
+                    onValueChange = { updated ->
+                        observationInput = updated
+                        viewModel.updateObservation(updated.text)
+                    },
+                    placeholder = { Text("Ex.: medir sentado e em repouso por 5 minutos") },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus(force = true)
+                            keyboardController?.hide()
+                        },
+                    ),
+                    maxLines = 4,
+                )
             }
         }
+    }
+
+    missingPermissionState?.let { permissionState ->
+        AlertDialog(
+            onDismissRequest = { missingPermissionState = null },
+            title = { Text("Permissões necessárias para o alarme") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Para o alarme tocar com som e tela em destaque, ative:")
+                    if (!permissionState.canPostNotifications) {
+                        Text("- Notificações do app")
+                    }
+                    if (!permissionState.canScheduleExactAlarms) {
+                        Text("- Alarmes exatos")
+                    }
+                    if (!permissionState.canUseFullScreenIntent) {
+                        Text("- Exibição em tela cheia")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val intent = when {
+                            !permissionState.canPostNotifications -> {
+                                AlarmPermissionManager.createManageNotificationIntent(context)
+                            }
+
+                            !permissionState.canScheduleExactAlarms -> {
+                                AlarmPermissionManager.createManageExactAlarmIntent(context)
+                            }
+
+                            else -> {
+                                AlarmPermissionManager.createManageFullScreenIntentIntent(context)
+                            }
+                        }
+                        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                        missingPermissionState = null
+                    },
+                ) {
+                    Text("Abrir configurações")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { missingPermissionState = null }) {
+                    Text("Agora não")
+                }
+            },
+        )
     }
 
     if (selectedDayForRecords != -1) {

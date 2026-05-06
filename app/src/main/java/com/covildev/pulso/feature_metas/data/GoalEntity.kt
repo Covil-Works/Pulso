@@ -9,4 +9,5 @@ data class GoalEntity(
     val id: Int = 1,
     val daysOfWeek: List<Int>,
     val timesOfDay: List<String>,
+    val alarmNote: String = "",
 )

@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.covildev.pulso.feature_metas.domain.model.GoalSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.DayOfWeek
@@ -20,16 +21,18 @@ class AlarmReminderScheduler @Inject constructor(
 
     override fun schedule(goals: GoalSettings) {
         val manager = alarmManager ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !manager.canScheduleExactAlarms()) {
+            return
+        }
         val validDays = goals.daysOfWeek.filter { it in 1..7 }
         validDays.forEach { dayValue ->
             goals.timesOfDay.distinct().forEach { localTime ->
                 val requestCode = requestCodeFor(dayOfWeek = dayValue, localTime = localTime)
-                val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode)
+                val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode, goals.alarmNote)
                 runCatching {
-                    manager.setRepeating(
+                    manager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         nextTriggerMillis(dayValue = dayValue, localTime = localTime),
-                        AlarmManager.INTERVAL_DAY * 7,
                         pendingIntent,
                     )
                 }
@@ -43,7 +46,7 @@ class AlarmReminderScheduler @Inject constructor(
         validDays.forEach { dayValue ->
             goals.timesOfDay.distinct().forEach { localTime ->
                 val requestCode = requestCodeFor(dayOfWeek = dayValue, localTime = localTime)
-                val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode)
+                val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode, goals.alarmNote)
                 runCatching {
                     manager.cancel(pendingIntent)
                     pendingIntent.cancel()
@@ -71,12 +74,14 @@ class AlarmReminderScheduler @Inject constructor(
         dayValue: Int,
         localTime: LocalTime,
         requestCode: Int,
+        note: String?,
     ): PendingIntent {
         val reminderIntent = Intent(context, ReminderReceiver::class.java).apply {
             action = ACTION_REMINDER
             putExtra(EXTRA_REMINDER_DAY, dayValue)
             putExtra(EXTRA_REMINDER_HOUR, localTime.hour)
             putExtra(EXTRA_REMINDER_MINUTE, localTime.minute)
+            putExtra(EXTRA_REMINDER_NOTE, note)
         }
         return PendingIntent.getBroadcast(
             context,

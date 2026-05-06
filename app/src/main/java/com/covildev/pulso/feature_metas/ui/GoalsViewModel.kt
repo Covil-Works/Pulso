@@ -29,8 +29,10 @@ data class GoalsUiState(
     val recordsByDay: Map<Int, List<BloodPressureRecord>> = emptyMap(),
     val previewSelectedDays: Set<Int> = emptySet(),
     val previewSelectedTimes: List<LocalTime> = emptyList(),
+    val previewObservation: String? = null,
     val editorSelectedDays: Set<Int> = emptySet(),
     val editorSelectedTimes: List<LocalTime> = emptyList(),
+    val editorObservation: String = "",
     val progressMessage: String = "Defina os dias e horários para montar sua rotina.",
     val progressFraction: Float = 0f,
     val progressLabel: String = "0%",
@@ -39,6 +41,7 @@ data class GoalsUiState(
 private data class GoalEditorState(
     val selectedDays: Set<Int> = emptySet(),
     val selectedTimes: List<LocalTime> = emptyList(),
+    val observation: String = "",
 )
 
 private data class GoalProgress(
@@ -96,8 +99,10 @@ class GoalsViewModel @Inject constructor(
             recordsByDay = recordsByDay,
             previewSelectedDays = saved.selectedDays,
             previewSelectedTimes = saved.selectedTimes,
+            previewObservation = saved.observation.ifBlank { null },
             editorSelectedDays = editor.selectedDays,
             editorSelectedTimes = editor.selectedTimes,
+            editorObservation = editor.observation,
             progressMessage = progress.message,
             progressFraction = progress.fraction,
             progressLabel = progress.label,
@@ -163,12 +168,19 @@ class GoalsViewModel @Inject constructor(
         }
     }
 
+    fun updateObservation(observation: String) {
+        editorState.update { current ->
+            current.copy(observation = observation)
+        }
+    }
+
     suspend fun saveGoals(): Result<Unit> {
         val current = editorState.value
         val result = saveGoalsUseCase(
             GoalSettings(
                 daysOfWeek = current.selectedDays,
                 timesOfDay = current.selectedTimes,
+                alarmNote = current.observation,
             ),
         )
         if (result.isSuccess) {
@@ -182,6 +194,7 @@ private fun GoalSettings.toEditorState(): GoalEditorState {
     return GoalEditorState(
         selectedDays = daysOfWeek,
         selectedTimes = timesOfDay.sorted(),
+        observation = alarmNote.orEmpty(),
     )
 }
 

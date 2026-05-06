@@ -16,7 +16,7 @@ import com.covildev.pulso.feature_registro.data.BloodPressureEntity
         BloodPressureEntity::class,
         GoalEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 @TypeConverters(PulsoConverters::class)

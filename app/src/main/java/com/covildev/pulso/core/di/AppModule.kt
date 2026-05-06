@@ -1,7 +1,9 @@
 package com.covildev.pulso.core.di
 
 import android.content.Context
+import androidx.room.migration.Migration
 import androidx.room.Room
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.covildev.pulso.core.data.local.PulsoDatabase
 import com.covildev.pulso.core.notification.AlarmReminderScheduler
 import com.covildev.pulso.core.notification.ReminderScheduler
@@ -38,6 +40,12 @@ abstract class AppModule {
     abstract fun bindReminderScheduler(impl: AlarmReminderScheduler): ReminderScheduler
 
     companion object {
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE goal_settings ADD COLUMN alarmNote TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         @Provides
         @Singleton
         fun provideDatabase(@ApplicationContext context: Context): PulsoDatabase {
@@ -45,7 +53,7 @@ abstract class AppModule {
                 context,
                 PulsoDatabase::class.java,
                 "pulso.db",
-            ).build()
+            ).addMigrations(MIGRATION_1_2).build()
         }
 
         @Provides
