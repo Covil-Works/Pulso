@@ -446,6 +446,10 @@ fun GoalsScreen(
                     text = "Observacao (opcional)",
                     style = MaterialTheme.typography.titleSmall,
                 )
+                val dismissObservationKeyboard = {
+                    focusManager.clearFocus(force = true)
+                    keyboardController?.hide()
+                }
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -459,8 +463,17 @@ fun GoalsScreen(
                         },
                     value = observationInput,
                     onValueChange = { updated ->
-                        observationInput = updated
-                        viewModel.updateObservation(updated.text)
+                        val isSubmitByNewline = updated.text.endsWith('\n')
+                        if (isSubmitByNewline) {
+                            val sanitizedText = updated.text.removeSuffix("\n")
+                            val sanitized = updated.copy(text = sanitizedText)
+                            observationInput = sanitized
+                            viewModel.updateObservation(sanitizedText)
+                            dismissObservationKeyboard()
+                        } else {
+                            observationInput = updated
+                            viewModel.updateObservation(updated.text)
+                        }
                     },
                     placeholder = { Text("Ex.: medir sentado e em repouso por 5 minutos") },
                     keyboardOptions = KeyboardOptions(
@@ -468,9 +481,25 @@ fun GoalsScreen(
                         imeAction = ImeAction.Done,
                     ),
                     keyboardActions = KeyboardActions(
+                        onGo = {
+                            dismissObservationKeyboard()
+                            defaultKeyboardAction(ImeAction.Go)
+                        },
+                        onSearch = {
+                            dismissObservationKeyboard()
+                            defaultKeyboardAction(ImeAction.Search)
+                        },
+                        onSend = {
+                            dismissObservationKeyboard()
+                            defaultKeyboardAction(ImeAction.Send)
+                        },
+                        onNext = {
+                            dismissObservationKeyboard()
+                            defaultKeyboardAction(ImeAction.Next)
+                        },
                         onDone = {
-                            focusManager.clearFocus(force = true)
-                            keyboardController?.hide()
+                            dismissObservationKeyboard()
+                            defaultKeyboardAction(ImeAction.Done)
                         },
                     ),
                     maxLines = 4,
