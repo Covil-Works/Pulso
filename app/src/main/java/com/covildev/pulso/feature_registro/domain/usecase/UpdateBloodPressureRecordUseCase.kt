@@ -23,7 +23,7 @@ class UpdateBloodPressureRecordUseCase @Inject constructor(
                 IllegalArgumentException(
                     validationError.systolicError
                         ?: validationError.diastolicError
-                        ?: "Nao foi possivel validar os campos de pressao.",
+                        ?: "Não foi possível validar os campos de pressão.",
                 ),
             )
         }

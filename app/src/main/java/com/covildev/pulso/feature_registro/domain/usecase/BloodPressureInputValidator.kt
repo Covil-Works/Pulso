@@ -24,16 +24,16 @@ object BloodPressureInputValidator {
         diastolic: Int,
     ): BloodPressureValidationErrors {
         val systolicError = if (systolic !in MIN_PRESSURE..MAX_PRESSURE) {
-            "A pressao sistolica deve estar entre $MIN_PRESSURE e $MAX_PRESSURE."
+            "A pressão sistólica deve estar entre $MIN_PRESSURE e $MAX_PRESSURE."
         } else {
             null
         }
 
         val diastolicError = when {
             diastolic !in MIN_PRESSURE..MAX_PRESSURE ->
-                "A pressao diastolica deve estar entre $MIN_PRESSURE e $MAX_PRESSURE."
+                "A pressão diastólica deve estar entre $MIN_PRESSURE e $MAX_PRESSURE."
             diastolic > systolic ->
-                "A pressao diastolica nao pode ser maior que a sistolica."
+                "A pressão diastólica não pode ser maior que a sistólica."
             else -> null
         }
 

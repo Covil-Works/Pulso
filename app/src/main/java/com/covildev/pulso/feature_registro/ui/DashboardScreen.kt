@@ -191,8 +191,8 @@ fun DashboardScreen(
         val diastolic = diastolicInput.toIntOrNull()
 
         val requiredErrors = BloodPressureValidationErrors(
-            systolicError = if (systolic == null) "Informe a pressao sistolica." else null,
-            diastolicError = if (diastolic == null) "Informe a pressao diastolica." else null,
+            systolicError = if (systolic == null) "Informe a pressão sistólica." else null,
+            diastolicError = if (diastolic == null) "Informe a pressão diastólica." else null,
         )
         if (requiredErrors.hasErrors) {
             return ParsedPressureForm(
@@ -248,7 +248,7 @@ fun DashboardScreen(
         } else {
             snackbarHostState.showSnackbar(
                 saveResult.exceptionOrNull()?.message
-                    ?: "Nao foi possivel salvar o registro.",
+                    ?: "Não foi possível salvar o registro.",
             )
         }
     }

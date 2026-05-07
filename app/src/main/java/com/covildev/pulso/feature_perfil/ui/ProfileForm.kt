@@ -49,7 +49,7 @@ fun ProfileForm(
             modifier = Modifier.fillMaxWidth(),
             value = additionalInfo,
             onValueChange = onAdditionalInfoChange,
-            label = { Text("Informacoes adicionais") },
+            label = { Text("Informações adicionais") },
             minLines = 3,
         )
         Button(

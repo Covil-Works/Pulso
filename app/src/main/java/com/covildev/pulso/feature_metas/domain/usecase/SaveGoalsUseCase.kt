@@ -21,7 +21,7 @@ class SaveGoalsUseCase @Inject constructor(
             return Result.failure(IllegalArgumentException("Selecione ao menos um dia da semana."))
         }
         if (sanitizedGoals.timesOfDay.isEmpty()) {
-            return Result.failure(IllegalArgumentException("Selecione ao menos um horario."))
+            return Result.failure(IllegalArgumentException("Selecione ao menos um horário."))
         }
 
         return runCatching {

@@ -351,7 +351,7 @@ fun GoalsScreen(
                                 } else {
                                     snackbarHostState.showSnackbar(
                                         result.exceptionOrNull()?.message
-                                            ?: "Nao foi possivel salvar as metas.",
+                                            ?: "Não foi possível salvar as metas.",
                                     )
                                 }
                             }
@@ -400,7 +400,7 @@ fun GoalsScreen(
                 }
                 if (uiState.editorSelectedTimes.isEmpty()) {
                     Text(
-                        text = "Nenhum horario definido.",
+                        text = "Nenhum horário definido.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Button(
@@ -413,7 +413,7 @@ fun GoalsScreen(
                         onClick = openTimePicker,
                     ) {
                         Icon(Icons.Default.AddAlarm, contentDescription = null)
-                        Text(" Adicionar horario", fontWeight = FontWeight.SemiBold)
+                        Text(" Adicionar horário", fontWeight = FontWeight.SemiBold)
                     }
                 } else {
                     val rowItems = (uiState.editorSelectedTimes.map<LocalTime, LocalTime?> { it } + listOf(null)).chunked(3)
@@ -436,7 +436,7 @@ fun GoalsScreen(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.AddAlarm,
-                                                contentDescription = "Adicionar horario",
+                                                contentDescription = "Adicionar horário",
                                             )
                                         }
                                     } else {
@@ -446,7 +446,7 @@ fun GoalsScreen(
                                             trailingIcon = {
                                                 Icon(
                                                     imageVector = Icons.Default.Close,
-                                                    contentDescription = "Remover horario",
+                                                    contentDescription = "Remover horário",
                                                 )
                                             },
                                         )
@@ -639,7 +639,7 @@ private fun DayRecordsContent(records: List<BloodPressureRecord>) {
     ) {
         if (records.isEmpty()) {
             Text(
-                text = "Nao ha registros neste dia.",
+                text = "Não há registros neste dia.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return@Column
@@ -715,6 +715,7 @@ private fun formatSelectedTimes(
     times: List<LocalTime>,
     formatter: DateTimeFormatter,
 ): String {
-    if (times.isEmpty()) return "Nenhum horario definido"
+    if (times.isEmpty()) return "Nenhum horário definido"
     return times.joinToString(", ") { formatter.format(it) }
 }
+

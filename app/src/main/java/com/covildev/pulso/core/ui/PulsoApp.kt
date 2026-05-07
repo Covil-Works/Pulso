@@ -137,7 +137,7 @@ private fun OnboardingScreen(
                         if (saveResult.isFailure) {
                             snackbarHostState.showSnackbar(
                                 saveResult.exceptionOrNull()?.message
-                                    ?: "Nao foi possivel salvar seu perfil.",
+                                    ?: "Não foi possível salvar seu perfil.",
                             )
                         }
                     }
@@ -212,7 +212,7 @@ private fun MainAppScaffold(
                             val message = if (it is ActivityNotFoundException) {
                                 "Nenhum navegador encontrado neste dispositivo."
                             } else {
-                                "Nao foi possivel abrir o site agora."
+                                "Não foi possível abrir o site agora."
                             }
                             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                         }
@@ -243,7 +243,7 @@ private fun MainAppScaffold(
                 TextButton(
                     onClick = { showProfileEditWarning = false },
                 ) {
-                    Text("Nao")
+                    Text("Não")
                 }
             },
         )
@@ -294,7 +294,7 @@ private fun EditProfileScreen(
         ) {
             Text(
                 modifier = Modifier.padding(bottom = 16.dp),
-                text = "Atualize nome, idade e informacoes adicionais.",
+                text = "Atualize nome, idade e informações adicionais.",
             )
             ProfileForm(
                 name = name,
@@ -312,7 +312,7 @@ private fun EditProfileScreen(
                         } else {
                             snackbarHostState.showSnackbar(
                                 saveResult.exceptionOrNull()?.message
-                                    ?: "Nao foi possivel salvar seu perfil.",
+                                    ?: "Não foi possível salvar seu perfil.",
                             )
                         }
                     }
@@ -347,5 +347,5 @@ private enum class MainTab(
 ) {
     DASHBOARD("Principal", Icons.Default.Home),
     GOALS("Metas", Icons.Default.NotificationsActive),
-    REPORTS("Relatorios", Icons.AutoMirrored.Filled.Assignment),
+    REPORTS("Relatórios", Icons.AutoMirrored.Filled.Assignment),
 }
