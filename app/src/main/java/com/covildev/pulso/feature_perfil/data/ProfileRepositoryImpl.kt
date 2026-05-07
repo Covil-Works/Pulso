@@ -20,6 +20,14 @@ class ProfileRepositoryImpl @Inject constructor(
     }
 }
 
-private fun UserEntity.toDomain(): UserProfile = UserProfile(name = name, age = age)
+private fun UserEntity.toDomain(): UserProfile = UserProfile(
+    name = name,
+    age = age,
+    additionalInfo = additionalInfo,
+)
 
-private fun UserProfile.toEntity(): UserEntity = UserEntity(name = name, age = age)
+private fun UserProfile.toEntity(): UserEntity = UserEntity(
+    name = name,
+    age = age,
+    additionalInfo = additionalInfo,
+)

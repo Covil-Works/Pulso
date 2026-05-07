@@ -67,29 +67,61 @@ class PdfReportGenerator @Inject constructor(
             y += space
         }
 
-        val nowFormatted = dateTimeFormatter.format(Instant.now().atZone(ZoneId.systemDefault()))
-        val patientName = profile?.name ?: "Não informado"
-        val patientAge = profile?.age?.toString() ?: "-"
+        fun drawWrappedLine(
+            text: String,
+            paint: Paint = bodyPaint,
+            space: Float = 20f,
+            maxCharsPerLine: Int = 74,
+        ) {
+            if (text.length <= maxCharsPerLine) {
+                drawLine(text, paint, space)
+                return
+            }
+            val words = text.split(" ")
+            var currentLine = ""
+            words.forEach { word ->
+                val candidate = if (currentLine.isBlank()) word else "$currentLine $word"
+                if (candidate.length <= maxCharsPerLine) {
+                    currentLine = candidate
+                } else {
+                    if (currentLine.isNotBlank()) {
+                        drawLine(currentLine, paint, space)
+                    }
+                    currentLine = word
+                }
+            }
+            if (currentLine.isNotBlank()) {
+                drawLine(currentLine, paint, space)
+            }
+        }
 
-        drawLine("Relatório de Pressão Arterial", titlePaint, 26f)
+        val nowFormatted = dateTimeFormatter.format(Instant.now().atZone(ZoneId.systemDefault()))
+        val patientName = profile?.name ?: "Nao informado"
+        val patientAge = profile?.age?.toString() ?: "-"
+        val patientAdditionalInfo = profile?.additionalInfo
+            ?.takeIf { it.isNotBlank() }
+            ?: "Nao informado"
+
+        drawLine("Relatorio de Pressao Arterial", titlePaint, 26f)
         drawLine("Paciente: $patientName | Idade: $patientAge")
+        drawWrappedLine("Informacoes adicionais: $patientAdditionalInfo")
         drawLine("Gerado em: $nowFormatted")
         drawLine("")
 
-        drawLine("Resumo Estatístico", sectionPaint, 24f)
+        drawLine("Resumo Estatistico", sectionPaint, 24f)
         val highest = summary.highestRecord
         val lowest = summary.lowestRecord
         val averageSystolic = summary.averageSystolic?.toString() ?: "-"
         val averageDiastolic = summary.averageDiastolic?.toString() ?: "-"
 
-        drawLine("Pico máximo: ${formatRecord(highest, dateTimeFormatter)}")
-        drawLine("Pico mínimo: ${formatRecord(lowest, dateTimeFormatter)}")
-        drawLine("Pressão média: $averageSystolic/$averageDiastolic mmHg")
+        drawLine("Pico maximo: ${formatRecord(highest, dateTimeFormatter)}")
+        drawLine("Pico minimo: ${formatRecord(lowest, dateTimeFormatter)}")
+        drawLine("Pressao media: $averageSystolic/$averageDiastolic mmHg")
         drawLine("")
 
-        drawLine("Histórico detalhado", sectionPaint, 24f)
+        drawLine("Historico detalhado", sectionPaint, 24f)
         if (records.isEmpty()) {
-            drawLine("Nenhum registro encontrado no período.")
+            drawLine("Nenhum registro encontrado no periodo.")
         } else {
             records.forEach { record ->
                 val date = dateTimeFormatter.format(
@@ -99,7 +131,7 @@ class PdfReportGenerator @Inject constructor(
                     "$date | ${record.systolic}/${record.diastolic} mmHg | ${record.riskLevel.label}",
                 )
                 record.notes?.takeIf { it.isNotBlank() }?.let { note ->
-                    drawLine("Obs: ${note.take(MAX_NOTE_LENGTH)}")
+                    drawWrappedLine("Obs: ${note.take(MAX_NOTE_LENGTH)}")
                 }
             }
         }

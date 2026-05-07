@@ -16,8 +16,10 @@ import androidx.compose.ui.unit.dp
 fun ProfileForm(
     name: String,
     age: String,
+    additionalInfo: String,
     onNameChange: (String) -> Unit,
     onAgeChange: (String) -> Unit,
+    onAdditionalInfoChange: (String) -> Unit,
     submitLabel: String,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
@@ -42,6 +44,13 @@ fun ProfileForm(
             label = { Text("Idade") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
+        )
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = additionalInfo,
+            onValueChange = onAdditionalInfoChange,
+            label = { Text("Informacoes adicionais") },
+            minLines = 3,
         )
         Button(
             modifier = Modifier.fillMaxWidth(),

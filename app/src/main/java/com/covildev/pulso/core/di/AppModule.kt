@@ -46,6 +46,14 @@ abstract class AppModule {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE user_profile ADD COLUMN additionalInfo TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+
         @Provides
         @Singleton
         fun provideDatabase(@ApplicationContext context: Context): PulsoDatabase {
@@ -53,7 +61,7 @@ abstract class AppModule {
                 context,
                 PulsoDatabase::class.java,
                 "pulso.db",
-            ).addMigrations(MIGRATION_1_2).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
         }
 
         @Provides

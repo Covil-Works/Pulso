@@ -9,27 +9,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -54,6 +54,9 @@ import com.covildev.pulso.feature_perfil.ui.ProfileViewModel
 import com.covildev.pulso.feature_registro.ui.DashboardScreen
 import com.covildev.pulso.feature_relatorio.ui.ReportsScreen
 import kotlinx.coroutines.launch
+
+private const val PROFILE_EDIT_WARNING_MESSAGE =
+    "Essas informa\u00e7\u00f5es devem ser preenchidas e acompanhadas por um profissional. Voc\u00ea tem certeza que quer editar?"
 
 @Composable
 fun PulsoApp(
@@ -89,11 +92,12 @@ fun PulsoApp(
 
 @Composable
 private fun OnboardingScreen(
-    onSaveProfile: suspend (String, String) -> Result<Unit>,
+    onSaveProfile: suspend (String, String, String) -> Result<Unit>,
     modifier: Modifier = Modifier,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var age by rememberSaveable { mutableStateOf("") }
+    var additionalInfo by rememberSaveable { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -113,21 +117,23 @@ private fun OnboardingScreen(
             Text("Bem-vindo ao Pulso")
             Text(
                 modifier = Modifier.padding(bottom = 16.dp),
-                text = "Antes de começar, informe seus dados de perfil.",
+                text = "Antes de comecar, informe seus dados de perfil.",
             )
             ProfileForm(
                 name = name,
                 age = age,
+                additionalInfo = additionalInfo,
                 onNameChange = { name = it },
                 onAgeChange = { age = it },
+                onAdditionalInfoChange = { additionalInfo = it },
                 submitLabel = "Salvar perfil",
                 onSubmit = {
                     coroutineScope.launch {
-                        val saveResult = onSaveProfile(name, age)
+                        val saveResult = onSaveProfile(name, age, additionalInfo)
                         if (saveResult.isFailure) {
                             snackbarHostState.showSnackbar(
                                 saveResult.exceptionOrNull()?.message
-                                    ?: "Não foi possível salvar seu perfil.",
+                                    ?: "Nao foi possivel salvar seu perfil.",
                             )
                         }
                     }
@@ -140,11 +146,21 @@ private fun OnboardingScreen(
 @Composable
 private fun MainAppScaffold(
     profile: UserProfile,
-    onSaveProfile: suspend (String, String) -> Result<Unit>,
+    onSaveProfile: suspend (String, String, String) -> Result<Unit>,
     modifier: Modifier = Modifier,
 ) {
     var currentTab by rememberSaveable { mutableStateOf(MainTab.DASHBOARD) }
-    var showProfileDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditProfileScreen by rememberSaveable { mutableStateOf(false) }
+    var showProfileEditWarning by rememberSaveable { mutableStateOf(false) }
+
+    if (showEditProfileScreen) {
+        EditProfileScreen(
+            profile = profile,
+            onBack = { showEditProfileScreen = false },
+            onSaveProfile = onSaveProfile,
+        )
+        return
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -179,7 +195,7 @@ private fun MainAppScaffold(
         when (currentTab) {
             MainTab.DASHBOARD -> DashboardScreen(
                 modifier = contentModifier,
-                onProfileRequested = { showProfileDialog = true },
+                onProfileRequested = { showProfileEditWarning = true },
                 onViewAllRequested = { currentTab = MainTab.REPORTS },
             )
 
@@ -188,81 +204,102 @@ private fun MainAppScaffold(
         }
     }
 
-    if (showProfileDialog) {
-        EditProfileDialog(
-            profile = profile,
-            onDismiss = { showProfileDialog = false },
-            onSaveProfile = onSaveProfile,
+    if (showProfileEditWarning) {
+        AlertDialog(
+            onDismissRequest = { showProfileEditWarning = false },
+            title = { Text("Aviso") },
+            text = { Text(PROFILE_EDIT_WARNING_MESSAGE) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showProfileEditWarning = false
+                        showEditProfileScreen = true
+                    },
+                ) {
+                    Text("Sim")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showProfileEditWarning = false },
+                ) {
+                    Text("Nao")
+                }
+            },
         )
     }
 }
 
 @Composable
-private fun EditProfileDialog(
+@OptIn(ExperimentalMaterial3Api::class)
+private fun EditProfileScreen(
     profile: UserProfile,
-    onDismiss: () -> Unit,
-    onSaveProfile: suspend (String, String) -> Result<Unit>,
+    onBack: () -> Unit,
+    onSaveProfile: suspend (String, String, String) -> Result<Unit>,
 ) {
-    var name by remember(profile.name) { mutableStateOf(profile.name) }
-    var age by remember(profile.age) { mutableStateOf(profile.age.toString()) }
-    var localError by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable(profile.name) { mutableStateOf(profile.name) }
+    var age by rememberSaveable(profile.age) { mutableStateOf(profile.age.toString()) }
+    var additionalInfo by rememberSaveable(profile.additionalInfo) { mutableStateOf(profile.additionalInfo) }
+    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Editar perfil") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Nome") },
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = age,
-                    onValueChange = { age = it.filter(Char::isDigit) },
-                    label = { Text("Idade") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                )
-                localError?.let {
-                    Text(it)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.secondary,
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Editar perfil") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar",
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
-                onClick = {
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Top,
+        ) {
+            Text(
+                modifier = Modifier.padding(bottom = 16.dp),
+                text = "Atualize nome, idade e informacoes adicionais.",
+            )
+            ProfileForm(
+                name = name,
+                age = age,
+                additionalInfo = additionalInfo,
+                onNameChange = { name = it },
+                onAgeChange = { age = it },
+                onAdditionalInfoChange = { additionalInfo = it },
+                submitLabel = "Salvar alteracoes",
+                onSubmit = {
                     coroutineScope.launch {
-                        val result = onSaveProfile(name, age)
-                        if (result.isSuccess) {
-                            onDismiss()
+                        val saveResult = onSaveProfile(name, age, additionalInfo)
+                        if (saveResult.isSuccess) {
+                            onBack()
                         } else {
-                            localError = result.exceptionOrNull()?.message ?: "Erro ao salvar."
+                            snackbarHostState.showSnackbar(
+                                saveResult.exceptionOrNull()?.message
+                                    ?: "Nao foi possivel salvar seu perfil.",
+                            )
                         }
                     }
                 },
-            ) {
-                Text("Salvar")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.secondary,
-                ),
-            ) {
-                Text("Cancelar")
-            }
-        },
-    )
+            )
+        }
+    }
 }
 
 @Composable
@@ -290,5 +327,5 @@ private enum class MainTab(
 ) {
     DASHBOARD("Principal", Icons.Default.Home),
     GOALS("Metas", Icons.Default.NotificationsActive),
-    REPORTS("Relatórios", Icons.AutoMirrored.Filled.Assignment),
+    REPORTS("Relatorios", Icons.AutoMirrored.Filled.Assignment),
 }

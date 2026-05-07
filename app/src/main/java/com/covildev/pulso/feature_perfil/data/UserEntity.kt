@@ -9,4 +9,5 @@ data class UserEntity(
     val id: Int = 1,
     val name: String,
     val age: Int,
+    val additionalInfo: String,
 )
