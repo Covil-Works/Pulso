@@ -1,8 +1,12 @@
 package com.covildev.pulso.core.ui
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -149,6 +153,7 @@ private fun MainAppScaffold(
     onSaveProfile: suspend (String, String, String) -> Result<Unit>,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     var currentTab by rememberSaveable { mutableStateOf(MainTab.DASHBOARD) }
     var showEditProfileScreen by rememberSaveable { mutableStateOf(false) }
     var showProfileEditWarning by rememberSaveable { mutableStateOf(false) }
@@ -197,6 +202,21 @@ private fun MainAppScaffold(
                 modifier = contentModifier,
                 onProfileRequested = { showProfileEditWarning = true },
                 onViewAllRequested = { currentTab = MainTab.REPORTS },
+                onHelpRequested = {
+                    val supportIntent = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://covildev.com"),
+                    )
+                    runCatching { context.startActivity(supportIntent) }
+                        .onFailure {
+                            val message = if (it is ActivityNotFoundException) {
+                                "Nenhum navegador encontrado neste dispositivo."
+                            } else {
+                                "Nao foi possivel abrir o site agora."
+                            }
+                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                        }
+                },
             )
 
             MainTab.GOALS -> GoalsScreen(modifier = contentModifier)

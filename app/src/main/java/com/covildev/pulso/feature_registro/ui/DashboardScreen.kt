@@ -12,11 +12,14 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,7 +39,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -44,8 +47,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -54,6 +56,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -64,6 +68,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -79,6 +84,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -132,6 +138,7 @@ private data class ParsedPressureForm(
 fun DashboardScreen(
     onProfileRequested: () -> Unit,
     onViewAllRequested: () -> Unit,
+    onHelpRequested: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
@@ -140,7 +147,7 @@ fun DashboardScreen(
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    var showOptionsMenu by remember { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var expandedRecordId by rememberSaveable { mutableStateOf<Long?>(null) }
     var bottomSheetMode by remember { mutableStateOf<DashboardBottomSheetMode?>(null) }
 
@@ -246,6 +253,21 @@ fun DashboardScreen(
         }
     }
 
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DashboardDrawerContent(
+                onProfileClick = {
+                    coroutineScope.launch { drawerState.close() }
+                    onProfileRequested()
+                },
+                onHelpClick = {
+                    coroutineScope.launch { drawerState.close() }
+                    onHelpRequested()
+                },
+            )
+        },
+    ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = LightSectionBackground,
@@ -255,23 +277,11 @@ fun DashboardScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
-                actions = {
-                    IconButton(onClick = { showOptionsMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                    }
-                    DropdownMenu(
-                        expanded = showOptionsMenu,
-                        onDismissRequest = { showOptionsMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Perfil") },
-                            onClick = {
-                                showOptionsMenu = false
-                                onProfileRequested()
-                            },
-                        )
+                navigationIcon = {
+                    IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Abrir menu")
                     }
                 },
             )
@@ -365,6 +375,7 @@ fun DashboardScreen(
                 }
             }
         }
+    }
     }
 
     val sheetMode = bottomSheetMode
@@ -620,6 +631,146 @@ fun DashboardScreen(
                     Text("Corrigir")
                 }
             },
+        )
+    }
+}
+
+@Composable
+private fun DashboardDrawerContent(
+    onProfileClick: () -> Unit,
+    onHelpClick: () -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val versionName = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrDefault("1.0.0")
+    }
+
+    ModalDrawerSheet(
+        modifier = Modifier
+            .fillMaxWidth(0.82f)
+            .fillMaxHeight(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+        ) {
+            Text(
+                text = "Menu",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            DrawerActionRow(
+                title = "Perfil",
+                titleStyle = MaterialTheme.typography.labelMedium,
+                icon = { DrawerBadgeCircle(text = "P") },
+                onClick = onProfileClick,
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = "Informa\u00E7\u00F5es",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            DrawerInfoRow(
+                text = "Vers\u00E3o $versionName",
+                badgeText = "i",
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "\u00A9 2026 Covil",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = "Ajuda",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            DrawerActionRow(
+                title = "Fale conosco",
+                titleStyle = MaterialTheme.typography.labelMedium,
+                icon = { DrawerBadgeCircle(text = "?") },
+                onClick = onHelpClick,
+            )
+            Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun DrawerActionRow(
+    title: String,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
+    titleStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon()
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = title,
+            color = titleColor,
+            style = titleStyle,
+        )
+    }
+}
+
+@Composable
+private fun DrawerInfoRow(
+    text: String,
+    badgeText: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DrawerBadgeCircle(text = badgeText)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
+}
+
+@Composable
+private fun DrawerBadgeCircle(
+    text: String,
+) {
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .background(SecondaryBlueLight, shape = RoundedCornerShape(100)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
         )
     }
 }
