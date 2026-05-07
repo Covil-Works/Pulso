@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="2dp"
+    android:paddingVertical="2dp">
+
+    <TextView
+        android:id="@+id/alarmHeadsUpTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="2"
+        android:text="Hora de medir sua pressao"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Title" />
+
+    <TextView
+        android:id="@+id/alarmHeadsUpTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:maxLines="1"
+        android:text="Quarta - 07:30"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Info" />
+
+    <TextView
+        android:id="@+id/alarmHeadsUpNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:maxLines="3"
+        android:text="Toque em Abrir alarme para ver os detalhes."
+        android:textAppearance="@style/TextAppearance.Compat.Notification" />
+
+</LinearLayout>

@@ -7,6 +7,7 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.covildev.pulso.R
 import com.covildev.pulso.feature_alarm.model.AlarmPayload
@@ -29,6 +30,10 @@ object AlarmAlertNotifier {
         val stopPendingIntent = AlarmAlertService.createStopPendingIntent(
             context = context,
             requestCode = alarmPayload.requestCode,
+        )
+        val headsUpRemoteView = buildHeadsUpRemoteView(
+            context = context,
+            alarmPayload = alarmPayload,
         )
         Log.d(
             TRACE_TAG,
@@ -53,6 +58,7 @@ object AlarmAlertNotifier {
             .setVibrate(vibrationPattern)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setContentIntent(fullScreenPendingIntent)
+            .setCustomHeadsUpContentView(headsUpRemoteView)
             .addAction(
                 0,
                 "Abrir alarme",
@@ -64,6 +70,23 @@ object AlarmAlertNotifier {
                 stopPendingIntent,
             )
             .build()
+    }
+
+    private fun buildHeadsUpRemoteView(
+        context: Context,
+        alarmPayload: AlarmPayload,
+    ): RemoteViews {
+        return RemoteViews(context.packageName, R.layout.alarm_heads_up_notification).apply {
+            setTextViewText(R.id.alarmHeadsUpTitle, alarmPayload.title)
+            setTextViewText(
+                R.id.alarmHeadsUpTime,
+                "${alarmPayload.dayLabel} - ${alarmPayload.formattedTime}",
+            )
+            setTextViewText(
+                R.id.alarmHeadsUpNote,
+                alarmPayload.normalizedNote ?: "Toque em Abrir alarme para ver os detalhes.",
+            )
+        }
     }
 }
 
