@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -49,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -276,6 +276,7 @@ fun GoalsScreen(
 
     if (showAlarmEditor) {
         val sheetScrollState = rememberScrollState()
+        val alarmEditorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val keyboardController = LocalSoftwareKeyboardController.current
         val focusManager = LocalFocusManager.current
         val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -284,8 +285,8 @@ fun GoalsScreen(
             mutableStateOf(TextFieldValue(uiState.editorObservation))
         }
         ModalBottomSheet(
+            sheetState = alarmEditorSheetState,
             containerColor = PureWhite,
-            contentWindowInsets = { WindowInsets(0) },
             onDismissRequest = {
                 showAlarmEditor = false
                 viewModel.restoreEditorFromSaved()
