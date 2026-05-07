@@ -5,6 +5,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
+import com.covildev.pulso.feature_alarm.model.AlarmPayload
+import com.covildev.pulso.feature_alarm.model.AlarmType
 import com.covildev.pulso.feature_metas.domain.model.GoalSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.DayOfWeek
@@ -14,6 +17,9 @@ import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 
+private const val GOALS_ALARM_TITLE = "Est\u00E1 na hora de medir sua press\u00E3o"
+private const val TRACE_TAG = "AlarmTrace"
+
 class AlarmReminderScheduler @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) : ReminderScheduler {
@@ -22,18 +28,38 @@ class AlarmReminderScheduler @Inject constructor(
     override fun schedule(goals: GoalSettings) {
         val manager = alarmManager ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !manager.canScheduleExactAlarms()) {
+            Log.w(TRACE_TAG, "Schedule ignorado: sem permissao de exact alarm.")
             return
         }
         val validDays = goals.daysOfWeek.filter { it in 1..7 }
+        Log.i(TRACE_TAG, "Schedule iniciado days=${validDays.size} times=${goals.timesOfDay.distinct().size}")
         validDays.forEach { dayValue ->
             goals.timesOfDay.distinct().forEach { localTime ->
-                val requestCode = requestCodeFor(dayOfWeek = dayValue, localTime = localTime)
-                val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode, goals.alarmNote)
+                val alarmPayload = buildGoalsAlarmPayload(
+                    dayValue = dayValue,
+                    localTime = localTime,
+                    note = goals.alarmNote,
+                )
+                val pendingIntent = buildPendingIntent(alarmPayload)
                 runCatching {
                     manager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
-                        nextTriggerMillis(dayValue = dayValue, localTime = localTime),
+                        nextTriggerMillis(
+                            dayValue = dayValue,
+                            localTime = localTime,
+                        ),
                         pendingIntent,
+                    )
+                }.onSuccess {
+                    Log.i(
+                        TRACE_TAG,
+                        "Alarm agendado req=${alarmPayload.requestCode} day=$dayValue time=${alarmPayload.formattedTime}",
+                    )
+                }.onFailure { throwable ->
+                    Log.e(
+                        TRACE_TAG,
+                        "Falha ao agendar req=${alarmPayload.requestCode} day=$dayValue time=${alarmPayload.formattedTime}",
+                        throwable,
                     )
                 }
             }
@@ -43,13 +69,29 @@ class AlarmReminderScheduler @Inject constructor(
     override fun cancel(goals: GoalSettings) {
         val manager = alarmManager ?: return
         val validDays = goals.daysOfWeek.filter { it in 1..7 }
+        Log.i(TRACE_TAG, "Cancel iniciado days=${validDays.size} times=${goals.timesOfDay.distinct().size}")
         validDays.forEach { dayValue ->
             goals.timesOfDay.distinct().forEach { localTime ->
-                val requestCode = requestCodeFor(dayOfWeek = dayValue, localTime = localTime)
-                val pendingIntent = buildPendingIntent(dayValue, localTime, requestCode, goals.alarmNote)
+                val alarmPayload = buildGoalsAlarmPayload(
+                    dayValue = dayValue,
+                    localTime = localTime,
+                    note = goals.alarmNote,
+                )
+                val pendingIntent = buildPendingIntent(alarmPayload)
                 runCatching {
                     manager.cancel(pendingIntent)
                     pendingIntent.cancel()
+                }.onSuccess {
+                    Log.i(
+                        TRACE_TAG,
+                        "Alarm cancelado req=${alarmPayload.requestCode} day=$dayValue time=${alarmPayload.formattedTime}",
+                    )
+                }.onFailure { throwable ->
+                    Log.e(
+                        TRACE_TAG,
+                        "Falha ao cancelar req=${alarmPayload.requestCode} day=$dayValue time=${alarmPayload.formattedTime}",
+                        throwable,
+                    )
                 }
             }
         }
@@ -71,27 +113,37 @@ class AlarmReminderScheduler @Inject constructor(
     }
 
     private fun buildPendingIntent(
-        dayValue: Int,
-        localTime: LocalTime,
-        requestCode: Int,
-        note: String?,
+        alarmPayload: AlarmPayload,
     ): PendingIntent {
         val reminderIntent = Intent(context, ReminderReceiver::class.java).apply {
             action = ACTION_REMINDER
-            putExtra(EXTRA_REMINDER_DAY, dayValue)
-            putExtra(EXTRA_REMINDER_HOUR, localTime.hour)
-            putExtra(EXTRA_REMINDER_MINUTE, localTime.minute)
-            putExtra(EXTRA_REMINDER_NOTE, note)
+            putExtra(EXTRA_REMINDER_DAY, alarmPayload.dayOfWeek)
+            putExtra(EXTRA_REMINDER_HOUR, alarmPayload.hour)
+            putExtra(EXTRA_REMINDER_MINUTE, alarmPayload.minute)
+            putExtra(EXTRA_REMINDER_NOTE, alarmPayload.normalizedNote)
+            putExtra(EXTRA_REMINDER_TITLE, alarmPayload.title)
+            putExtra(EXTRA_REMINDER_TYPE, alarmPayload.type.rawValue)
         }
         return PendingIntent.getBroadcast(
             context,
-            requestCode,
+            alarmPayload.requestCode,
             reminderIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
-}
 
-private fun requestCodeFor(dayOfWeek: Int, localTime: LocalTime): Int {
-    return dayOfWeek * 10_000 + localTime.hour * 100 + localTime.minute
+    private fun buildGoalsAlarmPayload(
+        dayValue: Int,
+        localTime: LocalTime,
+        note: String?,
+    ): AlarmPayload {
+        return AlarmPayload(
+            hour = localTime.hour,
+            minute = localTime.minute,
+            dayOfWeek = dayValue,
+            title = GOALS_ALARM_TITLE,
+            note = note,
+            type = AlarmType.BLOOD_PRESSURE,
+        )
+    }
 }
