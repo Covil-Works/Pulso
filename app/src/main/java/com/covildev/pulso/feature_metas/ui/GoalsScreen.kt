@@ -492,7 +492,6 @@ fun GoalsScreen(
                             viewModel.updateObservation(updated.text)
                         }
                     },
-                    placeholder = { Text("Ex.: medir sentado e em repouso por 5 minutos") },
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Sentences,
                         imeAction = ImeAction.Done,
