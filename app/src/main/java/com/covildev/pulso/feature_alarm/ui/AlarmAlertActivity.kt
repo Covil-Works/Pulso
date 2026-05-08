@@ -73,12 +73,15 @@ class AlarmAlertActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "AlarmAlertActivity"
+        // Equivalent to ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED (deprecated in API 36).
+        // Kept as a literal to avoid deprecation warnings while preserving behavior on API 34-35.
+        private const val MODE_BACKGROUND_ACTIVITY_START_ALLOWED_LEGACY = 1
 
         private fun backgroundActivityStartMode(): Int {
             return if (Build.VERSION.SDK_INT >= 36) {
                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS
             } else {
-                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                MODE_BACKGROUND_ACTIVITY_START_ALLOWED_LEGACY
             }
         }
 
