@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -109,6 +110,7 @@ fun GoalsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = LightSectionBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text("Metas") },
@@ -718,4 +720,3 @@ private fun formatSelectedTimes(
     if (times.isEmpty()) return "Nenhum horário definido"
     return times.joinToString(", ") { formatter.format(it) }
 }
-

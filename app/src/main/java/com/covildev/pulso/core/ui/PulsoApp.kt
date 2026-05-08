@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -170,30 +173,10 @@ private fun MainAppScaffold(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(
-                containerColor = Color.White,
-                tonalElevation = 0.dp,
-            ) {
-                MainTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = currentTab == tab,
-                        onClick = { currentTab = tab },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onSecondary,
-                            unselectedIconColor = MaterialTheme.colorScheme.secondary,
-                            selectedTextColor = MaterialTheme.colorScheme.secondary,
-                            indicatorColor = MaterialTheme.colorScheme.secondary,
-                        ),
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label,
-                            )
-                        },
-                        label = { Text(tab.label) },
-                    )
-                }
-            }
+            AppBottomNavigation(
+                currentTab = currentTab,
+                onTabSelected = { currentTab = it },
+            )
         },
     ) { innerPadding ->
         val contentModifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
@@ -247,6 +230,42 @@ private fun MainAppScaffold(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun AppBottomNavigation(
+    currentTab: MainTab,
+    onTabSelected: (MainTab) -> Unit,
+) {
+    NavigationBar(
+        containerColor = Color.White,
+        tonalElevation = 0.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 100.dp),
+        windowInsets = NavigationBarDefaults.windowInsets,
+    ) {
+        MainTab.entries.forEach { tab ->
+            NavigationBarItem(
+                modifier = Modifier.padding(bottom = 5.dp),
+                selected = currentTab == tab,
+                onClick = { onTabSelected(tab) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondary,
+                    unselectedIconColor = MaterialTheme.colorScheme.secondary,
+                    selectedTextColor = MaterialTheme.colorScheme.secondary,
+                    indicatorColor = MaterialTheme.colorScheme.secondary,
+                ),
+                icon = {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = tab.label,
+                    )
+                },
+                label = { Text(tab.label) },
+            )
+        }
     }
 }
 
